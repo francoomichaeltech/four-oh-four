@@ -67,7 +67,7 @@ function renderBoot(ctx: CanvasRenderingContext2D, view: ViewModel): void {
   }
 
   if (t > 3.6) {
-    text(ctx, "press any key", VIEW_WIDTH / 2, 486, 14, {
+    text(ctx, "click, then press any key", VIEW_WIDTH / 2, 486, 14, {
       align: "center",
       color: COLOR_DIM,
       alpha: 0.5 + Math.sin(t * 2.4) * 0.3,

@@ -44,6 +44,11 @@ export class Input {
   }
 
   private readonly markInteracted = (): void => {
+    // A click counts as "any key". Without this, a player who arrives by
+    // typing the address and pressing Enter is stuck: the keyboard focus is
+    // still in the address bar, and the page never sees their keystrokes.
+    this.pressedThisFrame = true;
+
     if (this.interacted) return;
     this.interacted = true;
     this.onFirstInteraction();
