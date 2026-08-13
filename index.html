@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="A puzzle game played inside your browser's address bar."
+    />
+    <title>404 — Not Found</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        background: #0d1b2a;
+        overflow: hidden;
+      }
+      body {
+        display: grid;
+        place-items: center;
+      }
+      canvas {
+        display: block;
+        touch-action: none;
+      }
+      #no-keyboard {
+        display: none;
+        padding: 2rem;
+        max-width: 32rem;
+        text-align: center;
+        color: #ffb703;
+        font: 400 0.95rem/1.9 ui-monospace, "DejaVu Sans Mono", monospace;
+      }
+      /* This game is played by typing into the address bar.
+         Touch devices cannot do that, so we say so honestly. */
+      @media (pointer: coarse) {
+        canvas {
+          display: none;
+        }
+        #no-keyboard {
+          display: block;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="stage"></canvas>
+    <p id="no-keyboard">
+      404<br /><br />
+      this game is played in the address bar.<br />
+      it needs a keyboard.<br /><br />
+      please open it on a desktop browser.
+    </p>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
