@@ -17,10 +17,20 @@ function boot(): void {
   const audio = new AudioEngine();
   const router = new Router();
   const game = new Game(router, audio);
+  const intro = document.querySelector<HTMLDivElement>("#intro");
 
-  // The AudioContext may only start from a user gesture.
+  // A shared/bookmarked mid-game link means the rules are already known —
+  // only the fresh, from-scratch boot screen needs the how-to-play overlay.
+  if (router.state.phase !== "boot") {
+    intro?.remove();
+  }
+
+  // The AudioContext may only start from a user gesture. That same gesture
+  // is the moment the how-to-play overlay has done its job and should
+  // step aside.
   const input = new Input(() => {
     audio.unlock();
+    intro?.classList.add("is-hidden");
   });
 
   startLoop((dt) => {

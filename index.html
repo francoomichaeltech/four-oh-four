@@ -48,11 +48,109 @@
         #no-keyboard {
           display: block;
         }
+        #intro {
+          display: none;
+        }
+      }
+
+      /*
+       * The rules of this game are unlike almost any other web game: the
+       * browser's own address bar and Back button are the controller. That
+       * is the entire point, but it means a first-time player who is not
+       * told this upfront has no way to guess it. This overlay says the
+       * rules once, plainly, before anything else happens.
+       */
+      #intro {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: grid;
+        place-items: center;
+        padding: 1.5rem;
+        background: rgba(13, 27, 42, 0.94);
+        color: #ffb703;
+        font: 400 0.95rem/1.7 ui-monospace, "JetBrains Mono", "DejaVu Sans Mono",
+          "Courier New", monospace;
+        text-align: left;
+        cursor: pointer;
+        transition: opacity 0.25s ease;
+      }
+      #intro.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #intro .card {
+        max-width: 30rem;
+        border: 1px solid #8a6520;
+        padding: 1.75rem 2rem;
+      }
+      #intro .title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        letter-spacing: 4px;
+        margin-bottom: 0.9rem;
+      }
+      #intro .lede {
+        color: #ffb703;
+        margin-bottom: 1.1rem;
+      }
+      #intro ul {
+        list-style: none;
+        margin: 0 0 1.3rem;
+        padding: 0;
+      }
+      #intro li {
+        margin-bottom: 0.55rem;
+        color: #cda659;
+      }
+      #intro li strong {
+        color: #ffb703;
+      }
+      #intro li code {
+        color: #ffb703;
+        background: rgba(255, 183, 3, 0.12);
+        padding: 0.05rem 0.35rem;
+      }
+      #intro .start {
+        color: #8a6520;
+        letter-spacing: 2px;
+        font-size: 0.8rem;
+        animation: intro-pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes intro-pulse {
+        0%,
+        100% {
+          opacity: 0.5;
+        }
+        50% {
+          opacity: 1;
+        }
       }
     </style>
   </head>
   <body>
     <canvas id="stage"></canvas>
+    <div id="intro">
+      <div class="card">
+        <p class="title">404 — NOT FOUND</p>
+        <p class="lede">
+          A puzzle played with your <strong>address bar</strong> and your
+          <strong>Back button</strong> &mdash; not just the keyboard.
+        </p>
+        <ul>
+          <li><strong>&larr; / &rarr;</strong> &mdash; walk</li>
+          <li>
+            Blocked by a wall? Click the address bar above, change the number
+            after <code>x=</code>, press Enter.
+          </li>
+          <li>
+            Need to hold a spot down? Stand on it, walk away, then press your
+            browser's <strong>Back</strong> button.
+          </li>
+        </ul>
+        <p class="start">click anywhere, or press any key, to begin</p>
+      </div>
+    </div>
     <p id="no-keyboard">
       404<br /><br />
       this game is played in the address bar.<br />

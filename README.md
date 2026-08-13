@@ -97,6 +97,29 @@ click is enough on its own. The boot copy was updated to say
 headless-browser test above (`click + key press leaves boot and enters
 room 1`) exists specifically to keep this from regressing.
 
+## A UX problem found by an actual human playtester — and the fix
+
+Automated tests confirmed the game *worked*. They did not confirm it was
+*understandable*. A real first-time player was asked to open the game cold,
+with no explanation, and try to play it. Their reaction: *"I don't
+understand what the game is, what it does, or how it's played."*
+
+That is exactly the failure mode the code comments elsewhere in this repo
+warn about — a judge who is confused for ten seconds closes the tab — and
+no amount of passing unit tests would have caught it, because the mechanic
+(the address bar and the Back button *are* the controller) is not something
+any prior web game trains a player to expect.
+
+The fix is `#intro` in `index.html`: a plain-language rules screen — arrow
+keys to walk, edit the URL to get past a wall, use Back to hold a spot down
+— shown once, before anything else happens, and dismissed by the same
+click or keypress that starts the game. It's skipped automatically for
+anyone arriving via a shared mid-game link, since they've already seen it.
+Covered by a dedicated Playwright suite (`intro overlay visible on fresh
+boot`, `intro hides after a single click`, `intro is removed entirely on a
+deep link`, plus a full room 1 → 2 → 3 → found run with the overlay in
+place) — 10/10 checks passing.
+
 ## Manual play test
 
 1. Wait a beat. The small square falls onto the floor and `404 / NOT FOUND`
