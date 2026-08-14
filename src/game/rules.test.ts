@@ -39,11 +39,15 @@ describe("isPlateHeld", () => {
 
 describe("isDoorOpen", () => {
   it("opens only with the correct key", () => {
-    expect(isDoorOpen(parseState("#/room/3?x=88&key=wrong"), ROOMS[3])).toBe(false);
-    expect(isDoorOpen(parseState("#/room/3?x=88&key=k7f2"), ROOMS[3])).toBe(true);
+    expect(isDoorOpen(parseState("#/room/3?x=88&key=wrong"), ROOMS[3], "k7f2")).toBe(false);
+    expect(isDoorOpen(parseState("#/room/3?x=88&key=k7f2"), ROOMS[3], "k7f2")).toBe(true);
+  });
+
+  it("stays closed when no key has been generated for this run", () => {
+    expect(isDoorOpen(parseState("#/room/3?x=88&key="), ROOMS[3], null)).toBe(false);
   });
 
   it("is always open in a room with no lock", () => {
-    expect(isDoorOpen(parseState("#/room/1?x=88"), ROOMS[1])).toBe(true);
+    expect(isDoorOpen(parseState("#/room/1?x=88"), ROOMS[1], null)).toBe(true);
   });
 });

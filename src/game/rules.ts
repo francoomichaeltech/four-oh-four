@@ -1,4 +1,4 @@
-import { PLAYER_HALF, ROOM_KEY } from "../config/constants";
+import { PLAYER_HALF } from "../config/constants";
 import type { RoomDef } from "../config/rooms";
 import type { GameState } from "../core/types";
 
@@ -47,9 +47,19 @@ export function isPlateHeld(state: GameState, room: RoomDef): boolean {
   return covers(state.x) || state.echoes.some(covers);
 }
 
-/** Derived, never stored, so a door can never disagree with the URL. */
-export function isDoorOpen(state: GameState, room: RoomDef): boolean {
-  if (room.requiresKey) return state.key === ROOM_KEY;
+/**
+ * Derived, never stored, so a door can never disagree with the URL.
+ *
+ * `expectedKey` is the current run's freshly generated secret (see
+ * game/key.ts) — the room definition itself only knows *whether* a key is
+ * required, never the value, since that value is different every run.
+ */
+export function isDoorOpen(
+  state: GameState,
+  room: RoomDef,
+  expectedKey: string | null,
+): boolean {
+  if (room.requiresKey) return expectedKey !== null && state.key === expectedKey;
   if (room.plate !== null) return isPlateHeld(state, room);
   return true;
 }

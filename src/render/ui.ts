@@ -103,6 +103,34 @@ export function urlMirror(
   });
 }
 
+/** mm:ss, floored to the second. Good enough for a puzzle measured in seconds. */
+export function formatTime(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m)}:${String(s).padStart(2, "0")}`;
+}
+
+/** Filled/hollow squares, e.g. room progress: ■ ■ □ */
+export function dots(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  total: number,
+  filled: number,
+  size = 9,
+  gap = 8,
+): void {
+  for (let i = 0; i < total; i += 1) {
+    const dx = x + i * (size + gap);
+    if (i < filled) {
+      fillRect(ctx, dx, y, size, size, 0.9);
+    } else {
+      strokeRect(ctx, dx, y, size, size, 0.4, 1.5);
+    }
+  }
+}
+
 /** Darkened corners. Almost free, and it makes flat shapes look composed. */
 export function vignette(
   ctx: CanvasRenderingContext2D,

@@ -1,13 +1,15 @@
 import {
+  COLOR_BG,
   COLOR_DIM,
   FLOOR_Y,
   PLAYER_HALF,
   PLAYER_SIZE,
+  TOTAL_ROOMS,
   VIEW_HEIGHT,
   VIEW_WIDTH,
 } from "../config/constants";
 import type { ViewModel } from "../game/game";
-import { fillRect, line, strokeRect, text, urlMirror, vignette } from "./ui";
+import { dots, fillRect, formatTime, line, strokeRect, text, urlMirror, vignette } from "./ui";
 
 const WALL_TOP = 150;
 const DOOR_WIDTH = 44;
@@ -38,10 +40,29 @@ export function render(ctx: CanvasRenderingContext2D, view: ViewModel): void {
 
   ctx.restore();
   vignette(ctx, VIEW_WIDTH, VIEW_HEIGHT);
+
+  // A brief fade masks the cut between rooms so the change reads as a beat,
+  // not a glitch.
+  if (view.transitionAlpha > 0) {
+    ctx.save();
+    ctx.globalAlpha = view.transitionAlpha;
+    ctx.fillStyle = COLOR_BG;
+    ctx.fillRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+    ctx.restore();
+  }
 }
 
 function renderBoot(ctx: CanvasRenderingContext2D, view: ViewModel): void {
   const t = view.stageTime;
+
+  if (view.bootLine.length > 0) {
+    text(ctx, view.bootLine, VIEW_WIDTH / 2, 70, 14, {
+      align: "center",
+      color: COLOR_DIM,
+      alpha: 0.6,
+      letterSpacing: "1px",
+    });
+  }
 
   text(ctx, "404", VIEW_WIDTH / 2, 250, 128, {
     align: "center",
@@ -67,11 +88,28 @@ function renderBoot(ctx: CanvasRenderingContext2D, view: ViewModel): void {
   }
 
   if (t > 3.6) {
-    text(ctx, "click, then press any key", VIEW_WIDTH / 2, 486, 14, {
+    const pulse = 0.5 + Math.sin(t * 2.4) * 0.3;
+    text(ctx, "click, then press any key", VIEW_WIDTH / 2, 462, 14, {
       align: "center",
       color: COLOR_DIM,
-      alpha: 0.5 + Math.sin(t * 2.4) * 0.3,
+      alpha: pulse,
       letterSpacing: "3px",
+    });
+
+    text(ctx, "\u2190 \u2192  move     back  rewind time", VIEW_WIDTH / 2, 494, 12, {
+      align: "center",
+      color: COLOR_DIM,
+      alpha: 0.55,
+      letterSpacing: "1px",
+    });
+
+    const bestLabel =
+      view.stats.bestTime !== null ? formatTime(view.stats.bestTime) : "\u2014";
+    text(ctx, `best time   ${bestLabel}`, VIEW_WIDTH / 2, 516, 12, {
+      align: "center",
+      color: COLOR_DIM,
+      alpha: 0.4,
+      letterSpacing: "1px",
     });
   }
 }
@@ -81,9 +119,20 @@ function renderRoom(ctx: CanvasRenderingContext2D, view: ViewModel): void {
 
   urlMirror(ctx, view.url, view.stageTime % 6 < 1.4);
 
-  text(ctx, `room ${String(room.id)} \u2014 ${room.title}`, 40, 108, 13, {
+  if (room.id <= TOTAL_ROOMS) {
+    dots(ctx, 40, 100, TOTAL_ROOMS, room.id);
+    text(ctx, room.title, 40 + TOTAL_ROOMS * 17 + 6, 108, 13, {
+      color: COLOR_DIM,
+      letterSpacing: "2px",
+    });
+  } else {
+    text(ctx, room.title, 40, 108, 13, { color: COLOR_DIM, letterSpacing: "2px" });
+  }
+
+  text(ctx, formatTime(view.stats.elapsed), VIEW_WIDTH - 40, 108, 13, {
+    align: "right",
     color: COLOR_DIM,
-    letterSpacing: "3px",
+    letterSpacing: "1px",
   });
 
   strokeRect(ctx, 26, 122, VIEW_WIDTH - 52, 330, 0.28);
@@ -143,38 +192,78 @@ function renderEnding(ctx: CanvasRenderingContext2D, view: ViewModel): void {
 function renderFound(ctx: CanvasRenderingContext2D, view: ViewModel): void {
   const t = view.stageTime;
   const fade = Math.min(t / 0.8, 1);
+  const { stats } = view;
 
-  text(ctx, "200", VIEW_WIDTH / 2, 250, 128, {
+  text(ctx, "200", VIEW_WIDTH / 2, 190, 96, {
     align: "center",
     weight: 700,
     alpha: fade,
     letterSpacing: "8px",
   });
-  line(ctx, VIEW_WIDTH / 2 - 128, 274, VIEW_WIDTH / 2 + 128, 274, fade * 0.8);
-  text(ctx, "FOUND", VIEW_WIDTH / 2, 310, 20, {
+  line(ctx, VIEW_WIDTH / 2 - 100, 210, VIEW_WIDTH / 2 + 100, 210, fade * 0.8);
+  text(ctx, "FOUND", VIEW_WIDTH / 2, 240, 18, {
     align: "center",
     color: COLOR_DIM,
     alpha: fade,
     letterSpacing: "6px",
   });
 
-  line(ctx, 40, FLOOR_Y, VIEW_WIDTH - 40, FLOOR_Y, 0.35);
-  renderPlayer(ctx, VIEW_WIDTH / 2, 0);
+  if (t < 0.5) return;
 
-  if (t > 1.6) {
-    text(ctx, "share this url", VIEW_WIDTH / 2, 486, 13, {
-      align: "center",
+  const statFade = Math.min((t - 0.5) / 0.6, 1);
+  const rows: readonly [string, string][] = [
+    ["time", formatTime(stats.elapsed)],
+    ["rewinds", String(stats.rewinds)],
+    ["url edits", String(stats.urlEdits)],
+    ["secret room", stats.secretRoomVisited ? "found" : "\u2014"],
+    ["best", stats.bestTime !== null ? formatTime(stats.bestTime) : "\u2014"],
+  ];
+
+  const panelTop = 288;
+  const panelHeight = 24 * rows.length + 24;
+  const panelWidth = 300;
+  const panelX = VIEW_WIDTH / 2 - panelWidth / 2;
+
+  strokeRect(ctx, panelX, panelTop, panelWidth, panelHeight, statFade * 0.5);
+
+  rows.forEach(([label, value], i) => {
+    const y = panelTop + 32 + i * 24;
+    const isDimBest = label === "best" && !stats.isNewBest;
+    text(ctx, label, panelX + 20, y, 13, {
       color: COLOR_DIM,
-      alpha: 0.7,
-      letterSpacing: "3px",
+      alpha: statFade * 0.85,
+      letterSpacing: "1px",
+    });
+    text(ctx, value, panelX + panelWidth - 20, y, 13, {
+      align: "right",
+      alpha: statFade,
+      letterSpacing: "1px",
+      ...(isDimBest ? { color: COLOR_DIM } : {}),
+    });
+  });
+
+  if (stats.isNewBest) {
+    text(ctx, "new best", panelX + panelWidth - 20, panelTop + 32 + 4 * 24 - 15, 10, {
+      align: "right",
+      alpha: statFade * (0.6 + Math.sin(t * 5) * 0.3),
+      letterSpacing: "1px",
     });
   }
 
-  if (view.flash !== null && t > 3) {
-    text(ctx, view.flash, VIEW_WIDTH / 2, 350, 13, {
+  const controlsY = panelTop + panelHeight + 34;
+  const pulse = 0.55 + Math.sin(t * 2.4) * 0.25;
+  text(ctx, "R  play again      esc  menu", VIEW_WIDTH / 2, controlsY, 13, {
+    align: "center",
+    color: COLOR_DIM,
+    alpha: statFade * pulse,
+    letterSpacing: "2px",
+  });
+
+  if (t > 2 && view.flash !== null) {
+    text(ctx, view.flash, VIEW_WIDTH / 2, controlsY + 30, 12, {
       align: "center",
       color: COLOR_DIM,
-      alpha: 0.45,
+      alpha: 0.4,
     });
   }
 }

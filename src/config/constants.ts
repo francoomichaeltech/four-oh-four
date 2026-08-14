@@ -14,13 +14,21 @@ export const PLAYER_SPEED = 270;
 /** Upper bound on simultaneous echoes. A cap keeps the puzzles honest. */
 export const MAX_ECHOES = 3;
 
-/** The token room 3 leaks into history for exactly one moment. */
-export const ROOM_KEY = "k7f2";
+/** The token room 3 leaks into history for exactly one moment.
+ *  Regenerated fresh every run — see game/key.ts. No confusing look-alike
+ *  characters (0/O, 1/l), so it stays readable under pressure. */
+export const KEY_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
+export const KEY_LENGTH = 4;
 
 /** How long the seed stays visible before the game redacts it. */
 export const SEED_VISIBLE_SECONDS = 2.1;
 
 export const STEP_INTERVAL = 0.16;
+
+/** The fixed, numbered puzzle rooms. Room 4 is the secret room and is
+ *  deliberately excluded from progress dots — finding it is a bonus, not
+ *  a requirement. */
+export const TOTAL_ROOMS = 3;
 
 export const COLOR_BG = "#0d1b2a";
 export const COLOR_FG = "#ffb703";

@@ -10,6 +10,7 @@ const RIGHT_KEYS = new Set(["ArrowRight", "KeyD"]);
 export class Input {
   private readonly held = new Set<string>();
   private pressedThisFrame = false;
+  private lastCode: string | null = null;
   private interacted = false;
 
   public constructor(private readonly onFirstInteraction: () => void) {
@@ -33,6 +34,15 @@ export class Input {
   public takeKeyPress(): boolean {
     const value = this.pressedThisFrame;
     this.pressedThisFrame = false;
+    return value;
+  }
+
+  /** Reads and clears the specific KeyboardEvent.code pressed this frame,
+   *  e.g. "KeyR" or "Escape". Null on a plain click or a movement-only frame
+   *  before any keyboard key has gone down. */
+  public takeKeyCode(): string | null {
+    const value = this.lastCode;
+    this.lastCode = null;
     return value;
   }
 
@@ -60,6 +70,7 @@ export class Input {
     this.markInteracted();
     this.held.add(event.code);
     this.pressedThisFrame = true;
+    this.lastCode = event.code;
 
     if (LEFT_KEYS.has(event.code) || RIGHT_KEYS.has(event.code)) {
       event.preventDefault();
