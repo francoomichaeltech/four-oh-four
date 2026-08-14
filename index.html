@@ -80,41 +80,53 @@
         pointer-events: none;
       }
       #intro .card {
-        max-width: 30rem;
+        max-width: 26rem;
         border: 1px solid #8a6520;
-        padding: 1.75rem 2rem;
+        padding: 2rem 2.25rem;
+        text-align: center;
       }
       #intro .title {
-        font-size: 1.4rem;
+        font-size: 1.5rem;
         font-weight: 700;
-        letter-spacing: 4px;
-        margin-bottom: 0.9rem;
+        letter-spacing: 6px;
+        margin-bottom: 0.6rem;
       }
       #intro .lede {
-        color: #ffb703;
-        margin-bottom: 1.1rem;
-      }
-      #intro ul {
-        list-style: none;
-        margin: 0 0 1.3rem;
-        padding: 0;
-      }
-      #intro li {
-        margin-bottom: 0.55rem;
         color: #cda659;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        margin-bottom: 1.6rem;
       }
-      #intro li strong {
-        color: #ffb703;
+      #intro .controls {
+        display: flex;
+        justify-content: center;
+        gap: 2.2rem;
+        margin-bottom: 1.8rem;
       }
-      #intro li code {
-        color: #ffb703;
-        background: rgba(255, 183, 3, 0.12);
-        padding: 0.05rem 0.35rem;
+      #intro .control {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      #intro .glyph {
+        font-size: 1.3rem;
+        border: 1px solid #8a6520;
+        border-radius: 4px;
+        width: 2.4rem;
+        height: 2.4rem;
+        display: grid;
+        place-items: center;
+      }
+      #intro .control span:last-child {
+        font-size: 0.68rem;
+        color: #8a6520;
+        letter-spacing: 1px;
       }
       #intro .start {
         color: #8a6520;
         letter-spacing: 2px;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         animation: intro-pulse 1.6s ease-in-out infinite;
       }
       @keyframes intro-pulse {
@@ -132,23 +144,23 @@
     <canvas id="stage"></canvas>
     <div id="intro">
       <div class="card">
-        <p class="title">404 — NOT FOUND</p>
-        <p class="lede">
-          A puzzle played with your <strong>address bar</strong> and your
-          <strong>Back button</strong> &mdash; not just the keyboard.
-        </p>
-        <ul>
-          <li><strong>&larr; / &rarr;</strong> &mdash; walk</li>
-          <li>
-            Blocked by a wall? Click the address bar above, change the number
-            after <code>x=</code>, press Enter.
-          </li>
-          <li>
-            Need to hold a spot down? Stand on it, walk away, then press your
-            browser's <strong>Back</strong> button.
-          </li>
-        </ul>
-        <p class="start">click anywhere, or press any key, to begin</p>
+        <p class="title">404</p>
+        <p class="lede">a puzzle played in your address bar</p>
+        <div class="controls">
+          <div class="control">
+            <span class="glyph">&larr;&rarr;</span>
+            <span>move</span>
+          </div>
+          <div class="control">
+            <span class="glyph">&#9679;</span>
+            <span>start</span>
+          </div>
+          <div class="control">
+            <span class="glyph">&#8630;</span>
+            <span>rewind</span>
+          </div>
+        </div>
+        <p class="start">click to begin</p>
       </div>
     </div>
     <p id="no-keyboard">

@@ -34,6 +34,17 @@ export const COLOR_BG = "#0d1b2a";
 export const COLOR_FG = "#ffb703";
 export const COLOR_DIM = "#8a6520";
 
+/** The rewind/echo mechanism gets its own color — a visual signal that
+ *  "this is the Back-button mechanic" wherever it appears (room 2's plate
+ *  and echoes, the rewind stat). */
+export const COLOR_ECHO = "#5fd4c4";
+export const COLOR_ECHO_DIM = "#2f6960";
+
+/** Danger / secrets / the thing about to be redacted. Used sparingly —
+ *  it should read as an alert, not decoration. */
+export const COLOR_DANGER = "#ff6b5e";
+export const COLOR_DANGER_DIM = "#803a34";
+
 /** System fonts only, so the build ships no downloaded asset. */
 export const FONT_MONO =
   'ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", "Courier New", monospace';

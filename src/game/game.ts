@@ -11,7 +11,7 @@ import type { Router } from "../core/router";
 import { loadBestTime, saveBestTime } from "../core/score";
 import { BOOT_STATE, FOUND_STATE, serializeState } from "../core/state";
 import type { GameState, NavigationEvent, RoomId } from "../core/types";
-import { activeHint } from "./hints";
+import { activeHint, type Hint } from "./hints";
 import { generateRunKey } from "./key";
 import { isDoorOpen, isPlateHeld, resolveWalk } from "./rules";
 
@@ -42,7 +42,7 @@ export interface ViewModel {
   readonly room: RoomDef;
   readonly doorOpen: boolean;
   readonly plateHeld: boolean;
-  readonly hint: string | null;
+  readonly hint: Hint | null;
   readonly flash: string | null;
   readonly shake: number;
   readonly squash: number;

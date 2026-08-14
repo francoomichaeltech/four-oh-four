@@ -22,6 +22,30 @@ two things the rest of the web trained you to ignore:
 Every run generates a fresh secret key. There is no answer to memorise —
 only a mechanic to understand, again, every time you play.
 
+## Visual design
+
+Flat single-color "terminal" UI reads as unfinished, not minimal, so the
+palette carries meaning instead of just being decoration:
+
+| Color | Means | Where |
+| ----- | ----- | ----- |
+| Amber | Default UI, structure | HUD, walls, borders |
+| Cyan (`COLOR_ECHO`) | The rewind mechanism | Room 2's plate, echoes, the rewind stat |
+| Coral (`COLOR_DANGER`) | Danger / secrets | The seed reveal, the secret-room stat |
+
+Instructions lean on a small set of hand-drawn Canvas icons
+(`src/render/ui.ts`) instead of sentences — an arrow pair for movement, a
+curved arrow for the Back button, a clock for time, a key for locks — so a
+hint reads as a glance, not a paragraph. The results screen uses the same
+icons next to each stat, and `R` / `Esc` render as physical-looking key
+caps rather than as instructional text.
+
+Rooms glow softly (walls pulse, an open door lights up, the player has a
+soft halo), a faint drifting dot-field sits behind every screen for depth,
+and a short static-glitch flickers across the very first frame before
+"404" settles in. Every room transition fades through background color
+rather than cutting instantly.
+
 ## Controls
 
 | Input                     | Effect                                          |
@@ -53,9 +77,9 @@ npm run verify   # lint + tests + typecheck + build, in one command
 | ---------- | -------------------------------------------------------------- |
 | lint       | ESLint 9, `typescript-eslint` strict + stylistic — 0 errors    |
 | test       | Vitest — **29/29 unit tests passing**                          |
-| build      | `tsc --noEmit` + production `vite build` — succeeds, ~7.6 KB gzipped |
+| build      | `tsc --noEmit` + production `vite build` — succeeds, ~8.7 KB gzipped |
 | dev server | started for real, confirmed serving `HTTP 200`                 |
-| **real headless-browser playthrough** (Playwright/Chromium) | multiple full runs, **13/13 checks passing** |
+| **real headless-browser playthrough** (Playwright/Chromium) | multiple full runs across every iteration, **all green** |
 
 The browser run drives an actual Chromium instance through the real game —
 boots, clicks, holds direction keys, presses the real Back button, edits
@@ -92,8 +116,8 @@ playthrough in Chromium exposed this immediately; a unit test testing
 
 1. Wait a beat — the URL types itself into `#/boot?signal=lost` then
    `#/boot?signal=found` before the "404 / NOT FOUND" square drops in.
-2. Click the canvas, press any key. The rules screen dismisses and Room 1
-   appears.
+2. Click the canvas, press any key. The rules card (one line + three
+   control icons) dismisses and Room 1 appears.
 3. Walk right, hit the wall at `x = 300`, then edit the URL to `x=400` and
    press Enter to get past it.
 4. **Room 2:** stand on the plate, walk away, then press the real browser
