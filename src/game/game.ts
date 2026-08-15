@@ -120,6 +120,25 @@ export class Game {
     return this.runRooms[id];
   }
 
+  /**
+   * True while a locked room's key hasn't been correctly entered yet.
+   *
+   * The bug this exists to prevent: the redaction commit puts the key
+   * exactly one Back press behind "current". But if the player stops
+   * moving at any point *after* redaction and then starts moving again —
+   * a completely natural thing to do while puzzling over a room — that
+   * fresh movement used to push a brand new "no key" entry, silently
+   * shoving the recoverable one an extra Back press further away. A player
+   * who paused, thought, and only *then* pressed Back would find nothing
+   * there and have no reliable way to know a second press would work.
+   * Suppressing freeze-commits for the whole time the key is unsolved
+   * removes the possibility entirely: exactly one entry always separates
+   * "current" from the reveal, no matter how the player moves in between.
+   */
+  private keyUnsolved(room: RoomDef): boolean {
+    return room.requiresKey && this.state.key !== this.runKey;
+  }
+
   public update(dt: number, input: Input): void {
     this.stageTime += dt;
     this.transitionAlpha = Math.max(0, this.transitionAlpha - dt * TRANSITION_FADE_PER_SECOND);
@@ -215,7 +234,7 @@ export class Game {
     const direction = input.direction;
 
     if (direction !== 0) {
-      if (!this.wasMoving) {
+      if (!this.wasMoving && !this.keyUnsolved(room)) {
         // Freeze wherever the player was resting BEFORE this movement
         // starts — this is exactly what the Back button should rewind to.
         // Committing on *release* instead (the more obvious-looking
@@ -223,6 +242,11 @@ export class Game {
         // movement, and replace() during that movement silently overwrites
         // it before Back is ever pressed, so a "stand, walk away, press
         // Back" sequence never actually recovers the stand position.
+        //
+        // While a key is still unsolved, freeze-commits are suppressed
+        // entirely (see keyUnsolved()) so that ordinary walking around
+        // after missing the reveal can never push the recoverable entry
+        // more than one Back press away.
         this.router.commit(this.state);
       }
 
@@ -357,7 +381,10 @@ export class Game {
     this.stageTime = 0;
     this.router.commit(this.state);
     this.audio.play("win");
-    this.setFlash("try #/room/4", 10);
+    this.setFlash(
+      this.secretRoomVisited ? "every room found \u2014 press R to try a new one" : "try #/room/4",
+      10,
+    );
   }
 
   /** Starts a brand-new run: fresh key, fresh room layout, all stats reset. */
@@ -418,6 +445,10 @@ export class Game {
     }
 
     this.rewindCount += 1;
+    // Recovering a redacted key is easy to miss — the address bar is small
+    // and the player's attention is on the room, not the URL. Confirm it
+    // loudly, the same way the initial reveal was announced.
+    const hadRedactedSeed = this.state.seed === null;
     this.state = {
       phase: "playing",
       room: past.room,
@@ -430,6 +461,11 @@ export class Game {
     this.audio.play("rewind");
     this.shake = 0.3;
     this.squash = 1;
+
+    if (hadRedactedSeed && past.seed !== null) {
+      this.setFlash(`history remembers: key=${past.seed}`, 4.5);
+      this.audio.play("reveal");
+    }
   }
 
   private adopt(next: GameState): void {
