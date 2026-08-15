@@ -18,9 +18,7 @@ import {
   fillRect,
   formatTime,
   glow,
-  iconArrow,
   iconBack,
-  iconClick,
   iconClock,
   iconEdit,
   iconKey,
@@ -128,17 +126,15 @@ function renderBoot(ctx: CanvasRenderingContext2D, view: ViewModel): void {
 
   if (t > 3.6) {
     const pulse = 0.5 + Math.sin(t * 2.4) * 0.3;
-    text(ctx, "click, then press any key", VIEW_WIDTH / 2, 452, 14, {
+    text(ctx, "click, then press any key", VIEW_WIDTH / 2, 462, 14, {
       align: "center",
       color: COLOR_DIM,
       alpha: pulse,
       letterSpacing: "3px",
     });
 
-    renderControlsRow(ctx, VIEW_WIDTH / 2, 490);
-
     const bestLabel = view.stats.bestTime !== null ? formatTime(view.stats.bestTime) : "\u2014";
-    text(ctx, `best  ${bestLabel}`, VIEW_WIDTH / 2, 520, 12, {
+    text(ctx, `best  ${bestLabel}`, VIEW_WIDTH / 2, 494, 12, {
       align: "center",
       color: COLOR_DIM,
       alpha: 0.4,
@@ -147,29 +143,6 @@ function renderBoot(ctx: CanvasRenderingContext2D, view: ViewModel): void {
   }
 
   renderGlitch(ctx, t);
-}
-
-/** Three icon groups instead of a sentence: move / click / rewind. */
-function renderControlsRow(ctx: CanvasRenderingContext2D, cx: number, y: number): void {
-  const groups: readonly [(cx2: number, cy2: number) => void, string][] = [
-    [
-      (cx2, cy2): void => {
-        iconArrow(ctx, cx2 - 9, cy2, 14, -1, { color: COLOR_DIM });
-        iconArrow(ctx, cx2 + 9, cy2, 14, 1, { color: COLOR_DIM });
-      },
-      "move",
-    ],
-    [(cx2, cy2): void => { iconClick(ctx, cx2, cy2, 16, { color: COLOR_DIM }); }, "start"],
-    [(cx2, cy2): void => { iconBack(ctx, cx2, cy2, 16, { color: COLOR_DIM }); }, "rewind"],
-  ];
-
-  const gap = 96;
-  const startX = cx - ((groups.length - 1) * gap) / 2;
-  groups.forEach(([draw, label], i) => {
-    const x = startX + i * gap;
-    draw(x - 14, y);
-    text(ctx, label, x + 10, y + 4, 11, { color: COLOR_DIM, alpha: 0.6, letterSpacing: "1px" });
-  });
 }
 
 function renderRoom(ctx: CanvasRenderingContext2D, view: ViewModel): void {

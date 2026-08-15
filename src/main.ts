@@ -1,4 +1,5 @@
 import { AudioEngine } from "./audio/engine";
+import type { RoomId } from "./core/types";
 import { Input } from "./core/input";
 import { startLoop } from "./core/loop";
 import { Router } from "./core/router";
@@ -38,6 +39,16 @@ function boot(): void {
     stage.begin();
     render(stage.ctx, game.view());
   });
+
+  // Dev-only: import.meta.env.DEV is statically false in production builds,
+  // so esbuild removes this block entirely — it never ships. It exists so
+  // end-to-end tests can read this run's randomized room geometry instead
+  // of guessing at wall/plate positions that change every run.
+  if (import.meta.env.DEV) {
+    (window as unknown as { __404_DEBUG__: unknown }).__404_DEBUG__ = {
+      getRoom: (id: RoomId): ReturnType<Game["getRoomDef"]> => game.getRoomDef(id),
+    };
+  }
 }
 
 boot();

@@ -1,18 +1,15 @@
 import type { AudioEngine } from "../audio/engine";
-import {
-  MAX_ECHOES,
-  PLAYER_SPEED,
-  SEED_VISIBLE_SECONDS,
-  STEP_INTERVAL,
-} from "../config/constants";
+import { MAX_ECHOES, PLAYER_SPEED, SEED_VISIBLE_SECONDS, STEP_INTERVAL } from "../config/constants";
 import { ROOMS, type RoomDef } from "../config/rooms";
 import type { Input } from "../core/input";
+import { loadRunCount, saveRunCount } from "../core/progress";
 import type { Router } from "../core/router";
 import { loadBestTime, saveBestTime } from "../core/score";
 import { BOOT_STATE, FOUND_STATE, serializeState } from "../core/state";
 import type { GameState, NavigationEvent, RoomId } from "../core/types";
 import { activeHint, type Hint } from "./hints";
 import { generateRunKey } from "./key";
+import { generateRunRooms } from "./procgen";
 import { isDoorOpen, isPlateHeld, resolveWalk } from "./rules";
 
 export type Stage = "boot" | "playing" | "ending" | "found";
@@ -89,12 +86,15 @@ export class Game {
 
   // —— This run ————————————————————————————
   private runKey = "";
+  private runRooms: Readonly<Record<RoomId, RoomDef>> = ROOMS;
+  private seedVisibleSeconds = SEED_VISIBLE_SECONDS;
   private runElapsed = 0;
   private rewindCount = 0;
   private urlEditCount = 0;
   private secretRoomVisited = false;
   private bestTime: number | null = null;
   private justBeatBest = false;
+  private runCount = 0;
 
   public constructor(
     private readonly router: Router,
@@ -103,10 +103,21 @@ export class Game {
     this.state = router.state;
     this.stage = this.state.phase === "playing" ? "playing" : this.state.phase;
     this.bestTime = loadBestTime();
+    this.runCount = loadRunCount();
     // A deep link can land directly inside a room. There is no prior
-    // startRun() call in that case, so a key still has to exist.
-    if (this.state.phase === "playing") this.runKey = generateRunKey();
+    // startRun() call in that case, so a key and a room layout still have
+    // to exist.
+    if (this.state.phase === "playing") {
+      this.runKey = generateRunKey();
+      const generated = generateRunRooms(Math.floor(Math.random() * 0xffffffff), this.runCount);
+      this.runRooms = generated.rooms;
+      this.seedVisibleSeconds = generated.seedVisibleSeconds;
+    }
     router.subscribe(this.handleNavigation);
+  }
+
+  public getRoomDef(id: RoomId): RoomDef {
+    return this.runRooms[id];
   }
 
   public update(dt: number, input: Input): void {
@@ -140,7 +151,7 @@ export class Game {
   }
 
   public view(): ViewModel {
-    const room = ROOMS[this.state.room];
+    const room = this.runRooms[this.state.room];
     const expectedKey = room.requiresKey ? this.runKey : null;
     return {
       stage: this.stage,
@@ -199,7 +210,7 @@ export class Game {
     this.runElapsed += dt;
     input.takeKeyPress();
 
-    const room = ROOMS[this.state.room];
+    const room = this.runRooms[this.state.room];
     const expectedKey = room.requiresKey ? this.runKey : null;
     const direction = input.direction;
 
@@ -284,7 +295,7 @@ export class Game {
   // —— Transitions ———————————————————————————
 
   private advance(): void {
-    const current = ROOMS[this.state.room];
+    const current = this.runRooms[this.state.room];
     const next = current.next;
     if (next === "found") {
       this.beginEnding();
@@ -294,7 +305,7 @@ export class Game {
   }
 
   private enterRoom(id: RoomId): void {
-    const def = ROOMS[id];
+    const def = this.runRooms[id];
     this.state = {
       phase: "playing",
       room: id,
@@ -316,8 +327,8 @@ export class Game {
     this.audio.play("reveal");
 
     if (def.requiresKey) {
-      this.setFlash(`ERR: seed=${this.runKey}`, SEED_VISIBLE_SECONDS - 0.3);
-      this.seedTimer = SEED_VISIBLE_SECONDS;
+      this.setFlash(`ERR: seed=${this.runKey}`, this.seedVisibleSeconds - 0.3);
+      this.seedTimer = this.seedVisibleSeconds;
     } else {
       this.setFlash(def.caption, 2.6);
     }
@@ -349,8 +360,16 @@ export class Game {
     this.setFlash("try #/room/4", 10);
   }
 
-  /** Starts a brand-new run: fresh key, all stats reset, back to room 1. */
+  /** Starts a brand-new run: fresh key, fresh room layout, all stats reset. */
   private startRun(): void {
+    const seed = Math.floor(Math.random() * 0xffffffff);
+    const generated = generateRunRooms(seed, this.runCount);
+    this.runRooms = generated.rooms;
+    this.seedVisibleSeconds = generated.seedVisibleSeconds;
+
+    this.runCount += 1;
+    saveRunCount(this.runCount);
+
     this.runKey = generateRunKey();
     this.runElapsed = 0;
     this.rewindCount = 0;

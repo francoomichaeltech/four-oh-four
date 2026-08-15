@@ -19,8 +19,12 @@ two things the rest of the web trained you to ignore:
 2. **The Back button does not leave. It rewinds the world**, and leaves an
    echo of your past self behind — sometimes the only way through.
 
-Every run generates a fresh secret key. There is no answer to memorise —
-only a mechanic to understand, again, every time you play.
+Every run regenerates the secret key **and** the room geometry itself —
+the wall, the plate, the doors all sit somewhere new. There is nothing to
+memorise. Replay it ten times and you solve the same *mechanic* ten
+different puzzles. Difficulty ramps with each completed run too: the plate
+narrows and the key's reveal window shortens, up to a cap that keeps it
+fair.
 
 ## Visual design
 
@@ -34,11 +38,13 @@ palette carries meaning instead of just being decoration:
 | Coral (`COLOR_DANGER`) | Danger / secrets | The seed reveal, the secret-room stat |
 
 Instructions lean on a small set of hand-drawn Canvas icons
-(`src/render/ui.ts`) instead of sentences — an arrow pair for movement, a
-curved arrow for the Back button, a clock for time, a key for locks — so a
-hint reads as a glance, not a paragraph. The results screen uses the same
-icons next to each stat, and `R` / `Esc` render as physical-looking key
-caps rather than as instructional text.
+(`src/render/ui.ts`) instead of sentences — a curved arrow for the Back
+button, a clock for time, a key for locks — so an in-room hint reads as a
+glance, not a paragraph. The results screen uses the same icons next to
+each stat, and `R` / `Esc` render as physical-looking key caps rather than
+instructional text. The title screen itself is deliberately bare: one line
+of context and a single real **Start** button — nothing else is
+interactive, and nothing else needs to be.
 
 Rooms glow softly (walls pulse, an open door lights up, the player has a
 soft halo), a faint drifting dot-field sits behind every screen for depth,
@@ -76,7 +82,7 @@ npm run verify   # lint + tests + typecheck + build, in one command
 | Check      | Result                                                        |
 | ---------- | -------------------------------------------------------------- |
 | lint       | ESLint 9, `typescript-eslint` strict + stylistic — 0 errors    |
-| test       | Vitest — **29/29 unit tests passing**                          |
+| test       | Vitest — **71/71 unit tests passing**                          |
 | build      | `tsc --noEmit` + production `vite build` — succeeds, ~8.7 KB gzipped |
 | dev server | started for real, confirmed serving `HTTP 200`                 |
 | **real headless-browser playthrough** (Playwright/Chromium) | multiple full runs across every iteration, **all green** |
@@ -112,12 +118,36 @@ playthrough in Chromium exposed this immediately; a unit test testing
 `src/game/game.ts`: commit the checkpoint at the **start** of a new move
 (freezing wherever the player is resting) instead of at the end.
 
+## Every run is a new puzzle
+
+`src/game/procgen.ts` regenerates the three numbered rooms from scratch at
+the start of every run, using a seeded PRNG (mulberry32 — deterministic,
+dependency-free). The *mechanic* per room never changes (room 1 is always
+a wall, room 2 always a plate, room 3 always a key), only the geometry —
+wall position and width, plate position and width, every door's distance
+from spawn.
+
+Positions are generated relative to each other with a guaranteed minimum
+gap rather than picked independently, so there is no random combination
+that produces an unsolvable room — 39 tests in `procgen.test.ts` check
+exactly that, across six different seeds and every difficulty level.
+
+Difficulty scales with how many runs a player has completed
+(`src/core/progress.ts`, persisted like the best time):
+
+| As difficulty rises | Effect |
+| -------------------- | ------ |
+| Plate width | Shrinks from ~62–94px down to ~40–62px — the stand/away/Back sequence needs more precision |
+| Seed reveal window | Shrinks from 2.1s down to 1.3s — reading it live gets tighter (the Back-button recovery trick always still works) |
+
+It caps at a fixed ceiling (`MAX_DIFFICULTY`) rather than scaling forever,
+so the tenth replay is harder than the first, never unfair.
+
 ## Manual play test
 
 1. Wait a beat — the URL types itself into `#/boot?signal=lost` then
    `#/boot?signal=found` before the "404 / NOT FOUND" square drops in.
-2. Click the canvas, press any key. The rules card (one line + three
-   control icons) dismisses and Room 1 appears.
+2. Click **start**. Room 1 appears.
 3. Walk right, hit the wall at `x = 300`, then edit the URL to `x=400` and
    press Enter to get past it.
 4. **Room 2:** stand on the plate, walk away, then press the real browser
@@ -143,17 +173,19 @@ playthrough in Chromium exposed this immediately; a unit test testing
   monotonic history index to tell a genuine Back/Forward traversal apart
   from a manual URL edit. `src/game/game.ts` uses that distinction to
   spawn an "echo" on rewind.
+- **The rooms are regenerated every run**, not just the key
+  (`src/game/procgen.ts`) — see [Every run is a new puzzle](#every-run-is-a-new-puzzle) above.
 - **The secret key is regenerated every run** (`src/game/key.ts`) from a
   4-character alphabet with no look-alike characters (no `0`/`O`, `1`/`l`),
-  so it stays readable under a 2-second time limit. The room definitions
-  only know *whether* a door needs a key, never the value — that value is
-  a private field on `Game`, not part of the shareable URL state.
+  so it stays readable under a short time limit. The room definitions only
+  know *whether* a door needs a key, never the value — that value is a
+  private field on `Game`, not part of the shareable URL state.
 - **Doors, plates, and walls are all derived, never stored**
   (`src/game/rules.ts`), so the rendered game can never disagree with what
   is written in the address bar.
 - **All audio is synthesised at runtime** (`src/audio/engine.ts`) — the
   shipped bundle contains zero audio files. **All visuals are Canvas 2D**
-  (`src/render/`) — zero image files. The whole game is ~22 KB (~7.6 KB
+  (`src/render/`) — zero image files. The whole game is ~27 KB (~9 KB
   gzipped).
 
 ## Project structure
@@ -163,10 +195,11 @@ src/
 ├── audio/engine.ts     procedural sound (Web Audio API, no audio files)
 ├── config/
 │   ├── constants.ts     tunable numbers: speed, resolution, key alphabet
-│   └── rooms.ts          the 4 room definitions (walls, plates, doors)
+│   └── rooms.ts          base room templates (room 4, the secret room)
 ├── core/
 │   ├── input.ts          keyboard + click handling
 │   ├── loop.ts            requestAnimationFrame driver
+│   ├── progress.ts        run-count persistence (drives difficulty)
 │   ├── router.ts          window.history <-> GameState, rewind detection
 │   ├── score.ts           best-time persistence (localStorage, defensive)
 │   ├── state.ts           GameState <-> location.hash (parse/serialize)
@@ -175,11 +208,12 @@ src/
 │   ├── game.ts            state machine + run lifecycle (replay, stats)
 │   ├── hints.ts            time-based escalating hints per room
 │   ├── key.ts              random per-run secret key generator
+│   ├── procgen.ts          per-run randomized room layouts + difficulty
 │   └── rules.ts            pure collision / door / plate logic
 ├── render/
 │   ├── canvas.ts           DPR-aware canvas setup
 │   ├── render.ts           per-stage drawing incl. results panel, HUD
-│   └── ui.ts                canvas drawing primitives (text, dots, time)
+│   └── ui.ts                canvas drawing primitives (text, icons, glow)
 └── main.ts               wires it all together, hosts the intro overlay
 ```
 
