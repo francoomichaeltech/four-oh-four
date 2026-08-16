@@ -4,7 +4,7 @@ A puzzle-platformer played entirely inside your browser's **address bar**
 and **Back button**. Built for the [BTT Web Game Jam — Summer 2026](https://devpost.com/)
 on Devpost.
 
-**Play:** https://four-oh-four.vercel.app <!-- TODO: replace with your actual Vercel URL -->
+**Play:** https://four-oh-four-three.vercel.app/
 
 ## The idea
 
@@ -20,9 +20,11 @@ two things the rest of the web trained you to ignore:
 Every run regenerates the secret key **and** the room geometry itself —
 the wall, the plate, the doors all sit somewhere new. There is nothing to
 memorise. Replay it ten times and you solve the same *mechanic* ten
-different puzzles. Difficulty ramps with each completed run too: the plate
-narrows and the key's reveal window shortens, up to a cap that keeps it
-fair.
+different puzzles. Difficulty ramps with each completed run, and not just
+by shrinking numbers: from a few replays on, room 1 grows a **second
+wall** and room 2 needs a **second plate held down at the same time** —
+genuinely more puzzle, not just a smaller target, and always still
+solvable by construction (see [Every run is a new puzzle](#every-run-is-a-new-puzzle)).
 
 ## Visual design
 
@@ -80,8 +82,8 @@ npm run verify   # lint + tests + typecheck + build, in one command
 | Check      | Result                                                        |
 | ---------- | -------------------------------------------------------------- |
 | lint       | ESLint 9, `typescript-eslint` strict + stylistic — 0 errors    |
-| test       | Vitest — **71/71 unit tests passing**                          |
-| build      | `tsc --noEmit` + production `vite build` — succeeds, ~8.7 KB gzipped |
+| test       | Vitest — **93/93 unit tests passing**                          |
+| build      | `tsc --noEmit` + production `vite build` — succeeds, ~9.6 KB gzipped |
 | dev server | started for real, confirmed serving `HTTP 200`                 |
 | **real headless-browser playthrough** (Playwright/Chromium) | multiple full runs across every iteration, **all green** |
 
@@ -93,11 +95,11 @@ progression, a genuinely different key each run, the results panel, `R`
 restarting cleanly, `Esc` returning to the title, and a best time that
 survives a full page reload via `localStorage`.
 
-## Two bugs that were found and fixed by actually playing the game
+## Bugs that were found and fixed by actually reading and playing the game
 
-Both of these passed `npm run test` the whole time — a symptom only shows
-up when a real browser executes the real sequence of events a player would
-produce, which is exactly what the Playwright suite exists to catch.
+All of these passed `npm run test` the whole time — a symptom only shows
+up when a real playthrough (browser or careful manual trace) produces the
+exact sequence of events a player would.
 
 **1. A click alone didn't start the game.** A player who types the URL and
 presses Enter never produces a keydown on the page — focus is still in the
@@ -116,19 +118,53 @@ playthrough in Chromium exposed this immediately; a unit test testing
 `src/game/game.ts`: commit the checkpoint at the **start** of a new move
 (freezing wherever the player is resting) instead of at the end.
 
+**3. Room 3's key recovery wasn't reliably one Back press away.** Same
+family of bug as #2, one layer deeper: if a player paused *after* the key
+was redacted and then moved again — completely natural while puzzling
+over a room — that fresh movement pushed a new "no key" history entry,
+silently burying the recoverable one an extra Back press further down. A
+player who missed the reveal and calmly tried "press Back" would find
+nothing there. Fixed with `Game.keyUnsolved()`: freeze-commits are
+suppressed entirely while a room's key is unsolved, so the redacted key
+stays *exactly* one Back press behind "current" no matter how the player
+moves in between.
+
+**4. The results screen told players to "try #/room/4" even after they'd
+just come from room 4.** `secretRoomVisited` was already tracked but
+never checked before showing that hint. Fixed to show a different,
+accurate message once the secret room has actually been found.
+
+**5. Room 1's hints hardcoded "wall at x = 300" / "try x = 400".** Since
+room 1 is procedurally generated, the wall is essentially never actually
+at x=300 — the tutorial hint was confidently telling players the wrong
+thing at exactly the moment they most needed it to be right. Fixed by
+making every hint read the room's actual rolled geometry instead of a
+fixed number; 6 new tests in `hints.test.ts` lock this in, including one
+asserting the suggested x always actually clears the wall.
+
+**6. A page reload mid-run silently desynced the puzzle.** The game
+generates a fresh, randomly-seeded room layout on every cold boot
+(including a reload), but was keeping the *stale* position/key/echoes
+from the URL as if they still applied to it. They can't: the new layout
+has a different wall, a different plate, and a brand new key value the
+old `key=` can never match again — a room the player had legitimately
+solved would appear solved in the URL but the door would refuse to open.
+Fixed by respawning cleanly in the same room against the fresh layout
+instead of trusting stale URL state.
+
 ## Every run is a new puzzle
 
 `src/game/procgen.ts` regenerates the three numbered rooms from scratch at
 the start of every run, using a seeded PRNG (mulberry32 — deterministic,
 dependency-free). The *mechanic* per room never changes (room 1 is always
-a wall, room 2 always a plate, room 3 always a key), only the geometry —
-wall position and width, plate position and width, every door's distance
-from spawn.
+about walls, room 2 always about plates, room 3 always a key), only the
+geometry does at first — and from a few replays on, the *shape* does too.
 
 Positions are generated relative to each other with a guaranteed minimum
-gap rather than picked independently, so there is no random combination
-that produces an unsolvable room — 39 tests in `procgen.test.ts` check
-exactly that, across six different seeds and every difficulty level.
+gap rather than picked independently, so there is no random combination —
+at any difficulty — that produces an unsolvable room. 44 tests in
+`procgen.test.ts` check exactly that, across six different seeds and
+every difficulty level, including the two-wall and two-plate tiers below.
 
 Difficulty scales with how many runs a player has completed
 (`src/core/progress.ts`, persisted like the best time):
@@ -136,32 +172,42 @@ Difficulty scales with how many runs a player has completed
 | As difficulty rises | Effect |
 | -------------------- | ------ |
 | Plate width | Shrinks from ~62–94px down to ~40–62px — the stand/away/Back sequence needs more precision |
-| Seed reveal window | Shrinks from 2.1s down to 1.3s — reading it live gets tighter (the Back-button recovery trick always still works) |
+| Seed reveal window | Shrinks from 2.1s down to 1.3s — reading it live gets tighter (the Back-button recovery trick always still works, and re-arms itself the same way each time you use it) |
+| Room 1's walls | A second wall appears — two separate "walk into it, read the number, edit past it" moments instead of one |
+| Room 2's plates | A second plate appears, and **both must be held down at once** — two separate echoes, planned in advance, not two attempts at one |
 
 It caps at a fixed ceiling (`MAX_DIFFICULTY`) rather than scaling forever,
-so the tenth replay is harder than the first, never unfair.
+so the tenth replay is harder than the first, never unfair — and every
+hint (`src/game/hints.ts`) reads the room's *actual* rolled geometry, so a
+hint is never wrong about how many walls or plates are actually there.
 
 ## Manual play test
 
 1. Wait a beat — the URL types itself into `#/boot?signal=lost` then
    `#/boot?signal=found` before the "404 / NOT FOUND" square drops in.
 2. Click **start**. Room 1 appears.
-3. Walk right until you hit the wall (its exact position is different every
-   run — the game tells you where), then edit the URL's `x=` past it and
-   press Enter.
+3. Walk right until you hit the wall — its position is shown on screen and
+   in the escalating hints, never the same twice. Edit the URL's `x=` past
+   it and press Enter. (From a few replays on, there's a second wall
+   further along — same idea, twice.)
 4. **Room 2:** stand on the plate, walk away, then press the real browser
    **Back** button. An echo stays behind on the plate; the door opens
-   because *something* is still holding it down.
-5. **Room 3:** a key flashes on screen for ~2 seconds, then the game
-   redacts it from the URL. Press **Back** to recover the moment it still
-   existed, read it, then type it into `key=` yourself.
+   because *something* is still holding it down. (From a few replays on,
+   there are two plates — hold one down with an echo, walk to the second,
+   and press Back again before continuing; the door needs both at once.)
+5. **Room 3:** a key flashes on screen for a couple of seconds, then the
+   game redacts it from the URL. Press **Back** to recover the moment it
+   still existed, read it, then type it into `key=` yourself. Recovered
+   but didn't get to it in time? It hides again the same way — press
+   **Back** again, it's always exactly one press behind.
 6. The URL erases itself and the page becomes `200 / FOUND`, with a stats
    panel (time, rewinds, url edits, secret room, best time).
 7. Press `R` to play again with a brand-new key, or `Esc` for the title
    screen. Best time persists across runs (and page reloads) via
    `localStorage`.
 8. Optional: visit `#/room/4` directly — a hidden room, not linked from
-   anywhere in the game.
+   anywhere in the game. (Room 3 drops a small, late hint that it's out
+   there, for anyone still exploring.)
 
 ## How it works
 
@@ -218,16 +264,19 @@ src/
 
 ## Deploying
 
-Hosted on **Vercel**, deploying automatically from `main`:
+Live on **Vercel**: https://four-oh-four-three.vercel.app/ — connected
+directly to this repo's `main` branch, so every push rebuilds and
+redeploys automatically. No custom config needed: Vercel auto-detects the
+Vite build (`npm run build` → `dist/`).
 
 ```bash
 npm run build   # outputs to dist/ — Vercel does this itself on push
 ```
 
-`vite.config.ts` uses a relative `base: "./"`, so `dist/` is portable as-is
-to Vercel, Netlify, GitHub Pages, or itch.io without extra config. On
-Vercel specifically: import the GitHub repo, framework preset **Vite**
-(auto-detected), no build settings need changing.
+`vite.config.ts` uses a relative `base: "./"`, so `dist/` is portable
+as-is to Vercel, Netlify, GitHub Pages, or itch.io if you'd rather host it
+elsewhere. On Vercel specifically: import the GitHub repo, framework
+preset **Vite** (auto-detected), no build settings need changing.
 
 ## Tech stack
 

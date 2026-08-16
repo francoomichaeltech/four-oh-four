@@ -117,4 +117,80 @@ describe("generateRunRooms", () => {
     const beyond = generateRunRooms(1, MAX_DIFFICULTY + 50);
     expect(beyond.seedVisibleSeconds).toBe(atCeiling.seedVisibleSeconds);
   });
+
+  describe("room 1's second wall (higher difficulty)", () => {
+    it("is absent below the threshold difficulty", () => {
+      for (const seed of SEEDS) {
+        expect(generateRunRooms(seed, 0).rooms[1].wall2).toBeNull();
+        expect(generateRunRooms(seed, 1).rooms[1].wall2).toBeNull();
+      }
+    });
+
+    it("appears from the threshold difficulty on, always solvable in order", () => {
+      for (const seed of SEEDS) {
+        for (const difficulty of [2, 4, MAX_DIFFICULTY]) {
+          const { rooms } = generateRunRooms(seed, difficulty);
+          const room = rooms[1];
+          const [min, max] = room.bounds;
+          const wall1 = room.wall;
+          const wall2 = room.wall2;
+          expect(wall1).not.toBeNull();
+          expect(wall2).not.toBeNull();
+          if (wall1 === null || wall2 === null) continue;
+
+          // spawn -> wall1 -> wall2 -> door, each cleanly separated, all in bounds.
+          expect(room.spawnX).toBeGreaterThanOrEqual(min);
+          expect(room.spawnX).toBeLessThan(wall1.x);
+          expect(wall1.x + wall1.width).toBeLessThan(wall2.x);
+          expect(wall2.x + wall2.width).toBeLessThan(room.doorX);
+          expect(room.doorX).toBeLessThanOrEqual(max);
+        }
+      }
+    });
+  });
+
+  describe("room 2's second plate (higher difficulty)", () => {
+    it("is absent below the threshold difficulty", () => {
+      for (const seed of SEEDS) {
+        expect(generateRunRooms(seed, 0).rooms[2].plate2).toBeNull();
+        expect(generateRunRooms(seed, 2).rooms[2].plate2).toBeNull();
+      }
+    });
+
+    it("appears from the threshold difficulty on, both cleanly separated and reachable", () => {
+      for (const seed of SEEDS) {
+        for (const difficulty of [3, 4, MAX_DIFFICULTY]) {
+          const { rooms } = generateRunRooms(seed, difficulty);
+          const room = rooms[2];
+          const [min, max] = room.bounds;
+          const plate1 = room.plate;
+          const plate2 = room.plate2;
+          expect(plate1).not.toBeNull();
+          expect(plate2).not.toBeNull();
+          if (plate1 === null || plate2 === null) continue;
+
+          expect(plate1.width).toBeGreaterThan(0);
+          expect(plate2.width).toBeGreaterThan(0);
+          expect(room.spawnX).toBeGreaterThanOrEqual(min);
+          expect(room.spawnX).toBeLessThan(plate1.x);
+          expect(plate1.x + plate1.width).toBeLessThan(plate2.x);
+          expect(plate2.x + plate2.width).toBeLessThan(room.doorX);
+          expect(room.doorX).toBeLessThanOrEqual(max);
+        }
+      }
+    });
+  });
+
+  it("room 3 never grows a wall or plate — the key is its only mechanic", () => {
+    for (const seed of SEEDS) {
+      for (const difficulty of [0, 3, MAX_DIFFICULTY]) {
+        const room = generateRunRooms(seed, difficulty).rooms[3];
+        expect(room.wall).toBeNull();
+        expect(room.wall2).toBeNull();
+        expect(room.plate).toBeNull();
+        expect(room.plate2).toBeNull();
+        expect(room.requiresKey).toBe(true);
+      }
+    }
+  });
 });

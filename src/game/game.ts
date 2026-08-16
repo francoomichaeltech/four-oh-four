@@ -10,7 +10,7 @@ import type { GameState, NavigationEvent, RoomId } from "../core/types";
 import { activeHint, type Hint } from "./hints";
 import { generateRunKey } from "./key";
 import { generateRunRooms } from "./procgen";
-import { isDoorOpen, isPlateHeld, resolveWalk } from "./rules";
+import { isDoorOpen, isPlate2Held, isPlateHeld, resolveWalk } from "./rules";
 
 export type Stage = "boot" | "playing" | "ending" | "found";
 
@@ -39,6 +39,7 @@ export interface ViewModel {
   readonly room: RoomDef;
   readonly doorOpen: boolean;
   readonly plateHeld: boolean;
+  readonly plate2Held: boolean;
   readonly hint: Hint | null;
   readonly flash: string | null;
   readonly shake: number;
@@ -207,6 +208,7 @@ export class Game {
       room,
       doorOpen: isDoorOpen(this.state, room, expectedKey),
       plateHeld: isPlateHeld(this.state, room),
+      plate2Held: isPlate2Held(this.state, room),
       hint: this.stage === "playing" ? activeHint(room, this.roomTime) : null,
       flash: this.flash,
       shake: this.shake,
@@ -324,7 +326,7 @@ export class Game {
 
     this.state = { ...this.state, seed: null };
     this.router.commit(this.state);
-    this.setFlash("ERR: seed redacted", 2.8);
+    this.setFlash("ERR: key redacted", 2.8);
     this.audio.play("blocked");
   }
 
@@ -380,7 +382,7 @@ export class Game {
     this.audio.play("reveal");
 
     if (def.requiresKey) {
-      this.setFlash(`ERR: seed=${this.runKey}`, this.seedVisibleSeconds - 0.3);
+      this.setFlash(`ERR: key=${this.runKey}`, this.seedVisibleSeconds - 0.3);
       this.seedTimer = this.seedVisibleSeconds;
     } else {
       this.setFlash(def.caption, 2.6);
@@ -494,6 +496,12 @@ export class Game {
     if (hadRedactedSeed && past.seed !== null) {
       this.setFlash(`history remembers: key=${past.seed}`, 4.5);
       this.audio.play("reveal");
+      // The recovered key doesn't stay up forever — it goes right back
+      // through the same reveal-then-redact cycle as the original. A
+      // player who blinks and misses it a second time can press Back
+      // again; the entry is still exactly one press behind (see
+      // keyUnsolved()), so nothing is ever permanently lost.
+      this.seedTimer = this.seedVisibleSeconds;
     }
   }
 

@@ -8,7 +8,9 @@ function makeRoom(overrides: Partial<RoomDef>): RoomDef {
     bounds: [40, 910],
     spawnX: 120,
     wall: null,
+    wall2: null,
     plate: null,
+    plate2: null,
     doorX: 880,
     requiresKey: false,
     next: 2,
@@ -78,5 +80,34 @@ describe("activeHint", () => {
         expect(hint.text).not.toMatch(/\d/);
       }
     }
+  });
+
+  it("reports both wall positions when a second wall is present", () => {
+    const room = makeRoom({ id: 1, wall: { x: 200, width: 30 }, wall2: { x: 600, width: 24 } });
+    expect(activeHint(room, 14)?.text).toBe("wall at x = 200, 600");
+  });
+
+  it("the final wall hint clears BOTH walls, not just the first", () => {
+    const room = makeRoom({ id: 1, wall: { x: 200, width: 30 }, wall2: { x: 600, width: 24 } });
+    const hint = activeHint(room, 52);
+    const match = /x = (\d+)/.exec(hint?.text ?? "");
+    const suggested = Number(match?.[1]);
+    expect(suggested).toBeGreaterThan(600 + 24 + 10);
+  });
+
+  it("mentions both plates when a second plate is present", () => {
+    const room = makeRoom({
+      id: 2,
+      plate: { x: 100, width: 60 },
+      plate2: { x: 400, width: 60 },
+    });
+    expect(activeHint(room, 14)?.text).toBe("plates need weight");
+    expect(activeHint(room, 52)?.text).toBe("hold one, walk to the other, press back on each");
+  });
+
+  it("mentions the secret room late in room 3, without spoiling it early", () => {
+    const room = makeRoom({ id: 3, requiresKey: true });
+    expect(activeHint(room, 52)?.text).not.toMatch(/room/);
+    expect(activeHint(room, 95)?.text).toBe("the address bar counts past 3, too");
   });
 });

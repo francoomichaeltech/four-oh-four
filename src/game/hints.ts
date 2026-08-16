@@ -1,5 +1,5 @@
 import { PLAYER_HALF } from "../config/constants";
-import type { RoomDef } from "../config/rooms";
+import type { RoomDef, Span } from "../config/rooms";
 import type { RoomId } from "../core/types";
 
 /** Which small glyph render.ts should draw next to a hint. */
@@ -17,11 +17,23 @@ interface HintTemplate {
   readonly text: (room: RoomDef) => string;
 }
 
-/** A clean, comfortably-clear-of-the-wall x value, rounded for readability. */
-function pastWallX(room: RoomDef): string {
-  const wall = room.wall;
-  if (wall === null) return "?";
-  const clearFace = wall.x + wall.width + PLAYER_HALF + 15;
+function walls(room: RoomDef): readonly Span[] {
+  return [room.wall, room.wall2].filter((w): w is Span => w !== null);
+}
+
+/** Every wall's x, in reading order — "300" or "300, 610". */
+function wallPositions(room: RoomDef): string {
+  const list = walls(room);
+  if (list.length === 0) return "?";
+  return list.map((w) => String(w.x)).join(", ");
+}
+
+/** A clean x value comfortably past every wall in the room, not just one. */
+function pastAllWalls(room: RoomDef): string {
+  const list = walls(room);
+  if (list.length === 0) return "?";
+  const furthestRightFace = Math.max(...list.map((w) => w.x + w.width));
+  const clearFace = furthestRightFace + PLAYER_HALF + 15;
   return String(Math.ceil(clearFace / 10) * 10);
 }
 
@@ -32,23 +44,38 @@ function pastWallX(room: RoomDef): string {
  *
  * Every room is procedurally generated (see game/procgen.ts), so a hint can
  * never hardcode a coordinate — it has to read the room's actual rolled
- * geometry, or it will confidently tell the player the wrong thing.
+ * geometry (including a possible second wall or plate at higher
+ * difficulty), or it will confidently tell the player the wrong thing.
  */
 const HINT_TEMPLATES: Readonly<Record<RoomId, readonly HintTemplate[]>> = {
   1: [
-    { at: 14, icon: null, text: (room) => `wall at x = ${String(room.wall?.x ?? "?")}` },
+    { at: 14, icon: null, text: (room) => `wall at x = ${wallPositions(room)}` },
     { at: 30, icon: "edit", text: () => "check the address bar" },
-    { at: 52, icon: "edit", text: (room) => `edit it \u2014 try x = ${pastWallX(room)}` },
+    { at: 52, icon: "edit", text: (room) => `edit it \u2014 try x = ${pastAllWalls(room)}` },
   ],
   2: [
-    { at: 14, icon: null, text: () => "plate needs weight" },
+    {
+      at: 14,
+      icon: null,
+      text: (room) => (room.plate2 !== null ? "plates need weight" : "plate needs weight"),
+    },
     { at: 30, icon: "back", text: () => "back button = time travel" },
-    { at: 52, icon: "back", text: () => "stand, walk away, press back" },
+    {
+      at: 52,
+      icon: "back",
+      text: (room) =>
+        room.plate2 !== null
+          ? "hold one, walk to the other, press back on each"
+          : "stand, walk away, press back",
+    },
   ],
   3: [
     { at: 14, icon: "key", text: () => "door wants a key" },
     { at: 30, icon: "key", text: () => "redacted \u2014 history remembers" },
     { at: 52, icon: "back", text: () => "back, read it, type key=" },
+    // Late and easy to miss on purpose — a small nudge for anyone still
+    // exploring rather than rushing to finish, not a spoiler up front.
+    { at: 95, icon: null, text: () => "the address bar counts past 3, too" },
   ],
   4: [{ at: 8, icon: null, text: () => "there is nothing here" }],
 };

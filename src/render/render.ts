@@ -11,6 +11,7 @@ import {
   VIEW_HEIGHT,
   VIEW_WIDTH,
 } from "../config/constants";
+import type { Span } from "../config/rooms";
 import type { ViewModel } from "../game/game";
 import {
   backgroundTexture,
@@ -34,6 +35,27 @@ const WALL_TOP = 150;
 const DOOR_WIDTH = 44;
 const DOOR_HEIGHT = 92;
 const GLITCH_SECONDS = 0.34;
+
+function drawWall(ctx: CanvasRenderingContext2D, wall: Span | null, stageTime: number): void {
+  if (wall === null) return;
+  const pulse = 0.85 + Math.sin(stageTime * 2.2) * 0.15;
+  const wallX = wall.x + wall.width / 2;
+  glow(ctx, wallX, (WALL_TOP + FLOOR_Y) / 2, 70, COLOR_FG, 0.16 * pulse);
+  fillRect(ctx, wall.x, WALL_TOP, wall.width, FLOOR_Y - WALL_TOP, pulse);
+  text(ctx, `x = ${String(wall.x)}`, wallX, FLOOR_Y + 24, 12, {
+    align: "center",
+    color: COLOR_DIM,
+  });
+}
+
+function drawPlate(ctx: CanvasRenderingContext2D, plate: Span | null, held: boolean): void {
+  if (plate === null) return;
+  const y = held ? FLOOR_Y - 4 : FLOOR_Y - 10;
+  const cx = plate.x + plate.width / 2;
+  if (held) glow(ctx, cx, FLOOR_Y - 6, 60, COLOR_ECHO, 0.35);
+  strokeRect(ctx, plate.x, y, plate.width, 10, held ? 1 : 0.55, 2, COLOR_ECHO);
+  if (held) fillRect(ctx, plate.x, y, plate.width, 10, 0.3, COLOR_ECHO);
+}
 
 export function render(ctx: CanvasRenderingContext2D, view: ViewModel): void {
   ctx.save();
@@ -172,25 +194,11 @@ function renderRoom(ctx: CanvasRenderingContext2D, view: ViewModel): void {
   strokeRect(ctx, 26, 122, VIEW_WIDTH - 52, 330, 0.28);
   line(ctx, 40, FLOOR_Y, VIEW_WIDTH - 40, FLOOR_Y, 0.6);
 
-  if (room.wall !== null) {
-    const pulse = 0.85 + Math.sin(view.stageTime * 2.2) * 0.15;
-    const wallX = room.wall.x + room.wall.width / 2;
-    glow(ctx, wallX, (WALL_TOP + FLOOR_Y) / 2, 70, COLOR_FG, 0.16 * pulse);
-    fillRect(ctx, room.wall.x, WALL_TOP, room.wall.width, FLOOR_Y - WALL_TOP, pulse);
-    text(ctx, `x = ${String(room.wall.x)}`, wallX, FLOOR_Y + 24, 12, {
-      align: "center",
-      color: COLOR_DIM,
-    });
-  }
+  drawWall(ctx, room.wall, view.stageTime);
+  drawWall(ctx, room.wall2, view.stageTime);
 
-  if (room.plate !== null) {
-    const held = view.plateHeld;
-    const y = held ? FLOOR_Y - 4 : FLOOR_Y - 10;
-    const cx = room.plate.x + room.plate.width / 2;
-    if (held) glow(ctx, cx, FLOOR_Y - 6, 60, COLOR_ECHO, 0.35);
-    strokeRect(ctx, room.plate.x, y, room.plate.width, 10, held ? 1 : 0.55, 2, COLOR_ECHO);
-    if (held) fillRect(ctx, room.plate.x, y, room.plate.width, 10, 0.3, COLOR_ECHO);
-  }
+  drawPlate(ctx, room.plate, view.plateHeld);
+  drawPlate(ctx, room.plate2, view.plate2Held);
 
   renderDoor(ctx, room.doorX, view.doorOpen, mood);
 
