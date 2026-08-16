@@ -4,9 +4,7 @@ A puzzle-platformer played entirely inside your browser's **address bar**
 and **Back button**. Built for the [BTT Web Game Jam — Summer 2026](https://devpost.com/)
 on Devpost.
 
-**Play:** https://michaelfrancoodev.github.io/four-oh-four/
-
-![status](https://github.com/michaelfrancoodev/four-oh-four/actions/workflows/deploy.yml/badge.svg)
+**Play:** https://four-oh-four.vercel.app <!-- TODO: replace with your actual Vercel URL -->
 
 ## The idea
 
@@ -148,8 +146,9 @@ so the tenth replay is harder than the first, never unfair.
 1. Wait a beat — the URL types itself into `#/boot?signal=lost` then
    `#/boot?signal=found` before the "404 / NOT FOUND" square drops in.
 2. Click **start**. Room 1 appears.
-3. Walk right, hit the wall at `x = 300`, then edit the URL to `x=400` and
-   press Enter to get past it.
+3. Walk right until you hit the wall (its exact position is different every
+   run — the game tells you where), then edit the URL's `x=` past it and
+   press Enter.
 4. **Room 2:** stand on the plate, walk away, then press the real browser
    **Back** button. An echo stays behind on the plate; the door opens
    because *something* is still holding it down.
@@ -219,16 +218,16 @@ src/
 
 ## Deploying
 
-`.github/workflows/deploy.yml` runs `npm run verify` and publishes `dist/`
-to GitHub Pages on every push to `main` via `actions/deploy-pages`. Enable
-it once under **Settings → Pages → Source: GitHub Actions**.
+Hosted on **Vercel**, deploying automatically from `main`:
 
 ```bash
-npm run build   # outputs to dist/
+npm run build   # outputs to dist/ — Vercel does this itself on push
 ```
 
 `vite.config.ts` uses a relative `base: "./"`, so `dist/` is portable as-is
-to GitHub Pages, Netlify, Vercel, or itch.io.
+to Vercel, Netlify, GitHub Pages, or itch.io without extra config. On
+Vercel specifically: import the GitHub repo, framework preset **Vite**
+(auto-detected), no build settings need changing.
 
 ## Tech stack
 
