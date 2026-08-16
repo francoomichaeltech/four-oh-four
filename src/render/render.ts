@@ -126,7 +126,7 @@ function renderBoot(ctx: CanvasRenderingContext2D, view: ViewModel): void {
 
   if (t > 3.6) {
     const pulse = 0.5 + Math.sin(t * 2.4) * 0.3;
-    text(ctx, "click, then press any key", VIEW_WIDTH / 2, 462, 14, {
+    text(ctx, "click or press any key", VIEW_WIDTH / 2, 462, 14, {
       align: "center",
       color: COLOR_DIM,
       alpha: pulse,
@@ -214,11 +214,11 @@ function renderRoom(ctx: CanvasRenderingContext2D, view: ViewModel): void {
   }
 
   if (view.flash !== null) {
-    const danger = room.requiresKey;
+    const isWarning = view.flash.startsWith("ERR:");
     text(ctx, view.flash, VIEW_WIDTH / 2, 176, 18, {
       align: "center",
       letterSpacing: "2px",
-      ...(danger ? { color: COLOR_DANGER } : {}),
+      ...(isWarning ? { color: COLOR_DANGER } : {}),
     });
   }
 }

@@ -104,14 +104,43 @@ export class Game {
     this.stage = this.state.phase === "playing" ? "playing" : this.state.phase;
     this.bestTime = loadBestTime();
     this.runCount = loadRunCount();
-    // A deep link can land directly inside a room. There is no prior
+    // A deep link can land directly inside a room — a shared URL, a
+    // bookmark, or simply a page reload mid-run. There is no prior
     // startRun() call in that case, so a key and a room layout still have
-    // to exist.
+    // to be generated fresh right here.
+    //
+    // That fresh layout is guaranteed to NOT match whatever layout the
+    // link's x/echo/key/seed were originally valid for — the wall is
+    // somewhere else, the plate is a different width, and critically the
+    // key is a brand new value the link's `key=` could never equal. Simply
+    // keeping the parsed state as-is would silently desync the puzzle: a
+    // room the player had legitimately solved would appear solved in the
+    // URL but the door would refuse to open. Respawning at the fresh
+    // layout's own spawn point — same room, clean state — trades exact
+    // mid-room position for a puzzle that is always internally consistent.
     if (this.state.phase === "playing") {
       this.runKey = generateRunKey();
       const generated = generateRunRooms(Math.floor(Math.random() * 0xffffffff), this.runCount);
       this.runRooms = generated.rooms;
       this.seedVisibleSeconds = generated.seedVisibleSeconds;
+
+      const def = this.runRooms[this.state.room];
+      this.state = {
+        phase: "playing",
+        room: this.state.room,
+        x: def.spawnX,
+        echoes: [],
+        key: null,
+        seed: def.requiresKey ? this.runKey : null,
+      };
+      // replace(), not commit(): this corrects the entry the browser
+      // already has (written by Router's own constructor from the same
+      // URL) rather than pushing a new one — so there is no stale,
+      // mismatched entry left sitting one Back press away.
+      this.router.replace(this.state, true);
+
+      if (this.state.room === 4) this.secretRoomVisited = true;
+      if (def.requiresKey) this.seedTimer = this.seedVisibleSeconds;
     }
     router.subscribe(this.handleNavigation);
   }
@@ -178,7 +207,7 @@ export class Game {
       room,
       doorOpen: isDoorOpen(this.state, room, expectedKey),
       plateHeld: isPlateHeld(this.state, room),
-      hint: this.stage === "playing" ? activeHint(room.id, this.roomTime) : null,
+      hint: this.stage === "playing" ? activeHint(room, this.roomTime) : null,
       flash: this.flash,
       shake: this.shake,
       squash: this.squash,

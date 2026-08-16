@@ -57,7 +57,7 @@ rather than cutting instantly.
 | Input                     | Effect                                          |
 | -------------------------- | ------------------------------------------------ |
 | `←` / `→` or `A` / `D`     | Move                                              |
-| Click canvas, then any key | Wakes audio + starts the game                     |
+| Click canvas, or any key   | Wakes audio + starts the game                     |
 | Address bar                | Type coordinates or keys directly                 |
 | Browser **Back**           | Rewind — leaves an echo at your old position      |
 | `R` (on the results screen)| Play again — new key, timer and stats reset       |
