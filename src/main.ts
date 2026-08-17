@@ -59,6 +59,7 @@ function boot(): void {
   const replayBtn = document.querySelector<HTMLButtonElement>("#replay-btn");
   const menuBtn = document.querySelector<HTMLButtonElement>("#menu-btn");
   const foundControls = document.querySelector<HTMLDivElement>("#found-controls");
+  const touchControls = document.querySelector<HTMLDivElement>("#touch-controls");
   replayBtn?.addEventListener("click", () => {
     game.replay();
   });
@@ -75,6 +76,7 @@ function boot(): void {
     if (view.stage !== lastStage) {
       lastStage = view.stage;
       foundControls?.classList.toggle("visible", view.stage === "found");
+      touchControls?.classList.toggle("active", view.stage === "playing");
     }
 
     stage.begin();
