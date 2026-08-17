@@ -24,24 +24,31 @@ describe("activeHint", () => {
   it("returns null before the first hint's threshold", () => {
     const room = makeRoom({ id: 1, wall: { x: 300, width: 28 } });
     expect(activeHint(room, 0)).toBeNull();
-    expect(activeHint(room, 13.9)).toBeNull();
+    expect(activeHint(room, 1.9)).toBeNull();
+  });
+
+  it("shows the first hint almost immediately \u2014 no long silent gap", () => {
+    // Regression test: a new player should never be staring at an
+    // unexplained room for 14+ seconds with zero guidance on screen.
+    const room = makeRoom({ id: 1, wall: { x: 300, width: 28 } });
+    expect(activeHint(room, 2)).not.toBeNull();
   });
 
   it("escalates through hints as elapsed time grows", () => {
     const room = makeRoom({ id: 1, wall: { x: 300, width: 28 } });
-    expect(activeHint(room, 14)?.at).toBe(14);
-    expect(activeHint(room, 29.9)?.at).toBe(14);
-    expect(activeHint(room, 30)?.at).toBe(30);
-    expect(activeHint(room, 52)?.at).toBe(52);
-    expect(activeHint(room, 999)?.at).toBe(52);
+    expect(activeHint(room, 2)?.at).toBe(2);
+    expect(activeHint(room, 15.9)?.at).toBe(2);
+    expect(activeHint(room, 16)?.at).toBe(16);
+    expect(activeHint(room, 32)?.at).toBe(32);
+    expect(activeHint(room, 999)?.at).toBe(32);
   });
 
   it("room 1's first hint reports THIS run's actual wall position, not a fixed number", () => {
     const nearWall = makeRoom({ id: 1, wall: { x: 187, width: 30 } });
     const farWall = makeRoom({ id: 1, wall: { x: 733, width: 22 } });
 
-    expect(activeHint(nearWall, 14)?.text).toBe("wall at x = 187");
-    expect(activeHint(farWall, 14)?.text).toBe("wall at x = 733");
+    expect(activeHint(nearWall, 2)?.text).toBe("wall at x = 187");
+    expect(activeHint(farWall, 2)?.text).toBe("wall at x = 733");
   });
 
   it("room 1's final hint always suggests an x value that clears the wall", () => {
@@ -56,7 +63,7 @@ describe("activeHint", () => {
 
     for (const wall of cases) {
       const room = makeRoom({ id: 1, wall });
-      const hint = activeHint(room, 52);
+      const hint = activeHint(room, 32);
       expect(hint).not.toBeNull();
       const match = /x = (\d+)/.exec(hint?.text ?? "");
       expect(match).not.toBeNull();
@@ -68,13 +75,13 @@ describe("activeHint", () => {
 
   it("falls back gracefully if a room 1 somehow has no wall", () => {
     const room = makeRoom({ id: 1, wall: null });
-    expect(activeHint(room, 14)?.text).toBe("wall at x = ?");
+    expect(activeHint(room, 2)?.text).toBe("wall at x = ?");
   });
 
   it("rooms 2-4 never reference a specific coordinate (mechanic-level only)", () => {
     for (const id of [2, 3, 4] as const) {
       const room = makeRoom({ id });
-      for (const elapsed of [14, 30, 52]) {
+      for (const elapsed of [2, 16, 32]) {
         const hint = activeHint(room, elapsed);
         if (hint === null) continue;
         expect(hint.text).not.toMatch(/\d/);
@@ -84,12 +91,12 @@ describe("activeHint", () => {
 
   it("reports both wall positions when a second wall is present", () => {
     const room = makeRoom({ id: 1, wall: { x: 200, width: 30 }, wall2: { x: 600, width: 24 } });
-    expect(activeHint(room, 14)?.text).toBe("wall at x = 200, 600");
+    expect(activeHint(room, 2)?.text).toBe("wall at x = 200, 600");
   });
 
   it("the final wall hint clears BOTH walls, not just the first", () => {
     const room = makeRoom({ id: 1, wall: { x: 200, width: 30 }, wall2: { x: 600, width: 24 } });
-    const hint = activeHint(room, 52);
+    const hint = activeHint(room, 32);
     const match = /x = (\d+)/.exec(hint?.text ?? "");
     const suggested = Number(match?.[1]);
     expect(suggested).toBeGreaterThan(600 + 24 + 10);
@@ -101,13 +108,13 @@ describe("activeHint", () => {
       plate: { x: 100, width: 60 },
       plate2: { x: 400, width: 60 },
     });
-    expect(activeHint(room, 14)?.text).toBe("plates need weight");
-    expect(activeHint(room, 52)?.text).toBe("hold one, walk to the other, press back on each");
+    expect(activeHint(room, 2)?.text).toBe("plates need weight");
+    expect(activeHint(room, 32)?.text).toBe("hold one, walk to the other, press back on each");
   });
 
   it("mentions the secret room late in room 3, without spoiling it early", () => {
     const room = makeRoom({ id: 3, requiresKey: true });
-    expect(activeHint(room, 52)?.text).not.toMatch(/room/);
-    expect(activeHint(room, 95)?.text).toBe("the address bar counts past 3, too");
+    expect(activeHint(room, 32)?.text).not.toMatch(/room/);
+    expect(activeHint(room, 70)?.text).toBe("the address bar counts past 3, too");
   });
 });

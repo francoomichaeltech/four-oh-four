@@ -105,7 +105,7 @@ npm run verify   # lint + tests + typecheck + build, in one command
 | Check      | Result                                                        |
 | ---------- | -------------------------------------------------------------- |
 | lint       | ESLint 9, `typescript-eslint` strict + stylistic — 0 errors    |
-| test       | Vitest — **93/93 unit tests passing**                          |
+| test       | Vitest — **94/94 unit tests passing**                          |
 | build      | `tsc --noEmit` + production `vite build` — succeeds, ~9.6 KB gzipped |
 | dev server | started for real, confirmed serving `HTTP 200`                 |
 | **real headless-browser playthrough** (Playwright/Chromium) | multiple full runs across every iteration, **all green** |
@@ -187,6 +187,18 @@ touch buttons for movement (`src/core/input.ts` gained
 `pressVirtualLeft/Right`, sharing the exact same held-key set arrow keys
 use) and real tappable "Play again" / "Menu" buttons (`Game.replay()` /
 `Game.backToMenu()`) that work identically on a tap or a mouse click.
+
+**8. New players had no idea what to do for the first 14 seconds in every
+room.** The escalating hints existed and were already short and specific
+("wall at x = 300", "plate needs weight") — but the first one didn't
+appear until 14 seconds in, and the room's only immediate feedback was an
+atmospheric caption ("the wall does not move") that describes the
+obstacle without saying what to do about it. A first-time player would
+stare at an unexplained wall for over ten seconds with zero guidance on
+screen. Fixed by moving the whole escalation earlier (2s / 16s / 32s
+instead of 14s / 30s / 52s) — no new text anywhere, the exact same
+minimal hints just arrive while they're still useful instead of after the
+player has already given up looking for one.
 
 ## Every run is a new puzzle
 

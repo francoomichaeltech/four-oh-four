@@ -38,9 +38,12 @@ function pastAllWalls(room: RoomDef): string {
 }
 
 /**
- * Escalating nudges, short enough to read in one glance. A judge who is
- * stuck for two minutes closes the tab, so the last hint in every room is
- * close to an outright answer, on purpose — brevity does not mean vague.
+ * Escalating nudges, short enough to read in one glance. The first one
+ * appears almost immediately — a silent room for 14 seconds is exactly
+ * where a new player stalls out, wondering what's even expected of them.
+ * A judge who is stuck for two minutes closes the tab, so the last hint in
+ * every room is close to an outright answer, on purpose — brevity does not
+ * mean vague.
  *
  * Every room is procedurally generated (see game/procgen.ts), so a hint can
  * never hardcode a coordinate — it has to read the room's actual rolled
@@ -49,19 +52,19 @@ function pastAllWalls(room: RoomDef): string {
  */
 const HINT_TEMPLATES: Readonly<Record<RoomId, readonly HintTemplate[]>> = {
   1: [
-    { at: 14, icon: null, text: (room) => `wall at x = ${wallPositions(room)}` },
-    { at: 30, icon: "edit", text: () => "check the address bar" },
-    { at: 52, icon: "edit", text: (room) => `edit it \u2014 try x = ${pastAllWalls(room)}` },
+    { at: 2, icon: null, text: (room) => `wall at x = ${wallPositions(room)}` },
+    { at: 16, icon: "edit", text: () => "check the address bar" },
+    { at: 32, icon: "edit", text: (room) => `edit it \u2014 try x = ${pastAllWalls(room)}` },
   ],
   2: [
     {
-      at: 14,
+      at: 2,
       icon: null,
       text: (room) => (room.plate2 !== null ? "plates need weight" : "plate needs weight"),
     },
-    { at: 30, icon: "back", text: () => "back button = time travel" },
+    { at: 16, icon: "back", text: () => "back button = time travel" },
     {
-      at: 52,
+      at: 32,
       icon: "back",
       text: (room) =>
         room.plate2 !== null
@@ -70,14 +73,14 @@ const HINT_TEMPLATES: Readonly<Record<RoomId, readonly HintTemplate[]>> = {
     },
   ],
   3: [
-    { at: 14, icon: "key", text: () => "door wants a key" },
-    { at: 30, icon: "key", text: () => "redacted \u2014 history remembers" },
-    { at: 52, icon: "back", text: () => "back, read it, type key=" },
+    { at: 2, icon: "key", text: () => "door wants a key" },
+    { at: 16, icon: "key", text: () => "redacted \u2014 history remembers" },
+    { at: 32, icon: "back", text: () => "back, read it, type key=" },
     // Late and easy to miss on purpose — a small nudge for anyone still
     // exploring rather than rushing to finish, not a spoiler up front.
-    { at: 95, icon: null, text: () => "the address bar counts past 3, too" },
+    { at: 70, icon: null, text: () => "the address bar counts past 3, too" },
   ],
-  4: [{ at: 8, icon: null, text: () => "there is nothing here" }],
+  4: [{ at: 2, icon: null, text: () => "there is nothing here" }],
 };
 
 export function activeHint(room: RoomDef, elapsed: number): Hint | null {
