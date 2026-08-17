@@ -178,7 +178,51 @@
         color: #cda659;
         font-size: 0.85rem;
         letter-spacing: 0.5px;
+        margin-bottom: 1.6rem;
+      }
+      #intro .howto {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
         margin-bottom: 2rem;
+        text-align: left;
+      }
+      #intro .howto-row {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        font-size: 0.8rem;
+        color: #ffb703;
+      }
+      #intro .keys {
+        display: flex;
+        gap: 0.3rem;
+        flex: 0 0 auto;
+        width: 4.6rem;
+        justify-content: flex-start;
+      }
+      #intro .keycap {
+        display: inline-grid;
+        place-items: center;
+        min-width: 1.7rem;
+        height: 1.7rem;
+        padding: 0 0.3rem;
+        border: 1px solid #8a6520;
+        border-radius: 3px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #ffd166;
+      }
+      #intro .only-coarse {
+        display: none;
+      }
+      @media (pointer: coarse) {
+        #intro .only-fine {
+          display: none;
+        }
+        #intro .only-coarse {
+          display: flex;
+        }
       }
       #intro .start-btn {
         font: inherit;
@@ -219,6 +263,24 @@
       <div class="card">
         <p class="title">404</p>
         <p class="lede">a puzzle played in your address bar</p>
+        <div class="howto">
+          <div class="howto-row only-fine">
+            <span class="keys"><span class="keycap">A</span><span class="keycap">D</span></span>
+            <span>move &mdash; or &larr; &rarr;</span>
+          </div>
+          <div class="howto-row only-coarse">
+            <span class="keys"><span class="keycap">&larr;</span><span class="keycap">&rarr;</span></span>
+            <span>move &mdash; on-screen buttons</span>
+          </div>
+          <div class="howto-row">
+            <span class="keys"><span class="keycap">URL</span></span>
+            <span>edit it to get past things</span>
+          </div>
+          <div class="howto-row">
+            <span class="keys"><span class="keycap">&larr;</span></span>
+            <span>back button rewinds time</span>
+          </div>
+        </div>
         <button type="button" class="start-btn">start</button>
       </div>
     </div>
