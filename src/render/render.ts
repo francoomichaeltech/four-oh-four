@@ -55,6 +55,10 @@ function drawPlate(ctx: CanvasRenderingContext2D, plate: Span | null, held: bool
   if (held) glow(ctx, cx, FLOOR_Y - 6, 60, COLOR_ECHO, 0.35);
   strokeRect(ctx, plate.x, y, plate.width, 10, held ? 1 : 0.55, 2, COLOR_ECHO);
   if (held) fillRect(ctx, plate.x, y, plate.width, 10, 0.3, COLOR_ECHO);
+  text(ctx, held ? "held" : "plate", cx, FLOOR_Y + 24, 12, {
+    align: "center",
+    color: COLOR_DIM,
+  });
 }
 
 export function render(ctx: CanvasRenderingContext2D, view: ViewModel): void {
@@ -200,7 +204,7 @@ function renderRoom(ctx: CanvasRenderingContext2D, view: ViewModel): void {
   drawPlate(ctx, room.plate, view.plateHeld);
   drawPlate(ctx, room.plate2, view.plate2Held);
 
-  renderDoor(ctx, room.doorX, view.doorOpen, mood);
+  renderDoor(ctx, room.doorX, view.doorOpen, mood, room.requiresKey);
 
   for (const echo of state.echoes) {
     strokeRect(
@@ -387,6 +391,7 @@ function renderDoor(
   x: number,
   open: boolean,
   mood: string,
+  requiresKey: boolean,
 ): void {
   const left = x - DOOR_WIDTH / 2;
   const top = FLOOR_Y - DOOR_HEIGHT;
@@ -398,5 +403,11 @@ function renderDoor(
     fillRect(ctx, left + 6, top + 6, DOOR_WIDTH - 12, DOOR_HEIGHT - 12, 0.18, mood);
   } else {
     line(ctx, left + 8, top + DOOR_HEIGHT / 2, x + 14, top + DOOR_HEIGHT / 2, 0.6);
+  }
+
+  // A locked door shows its own state at a glance — not just from a hint
+  // that may have already scrolled out of memory.
+  if (requiresKey) {
+    iconKey(ctx, x, top - 16, 16, { color: open ? mood : COLOR_DIM, alpha: open ? 1 : 0.7 });
   }
 }

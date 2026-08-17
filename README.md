@@ -200,6 +200,33 @@ instead of 14s / 30s / 52s) — no new text anywhere, the exact same
 minimal hints just arrive while they're still useful instead of after the
 player has already given up looking for one.
 
+**9. The plate had no persistent label; the wall did.** The wall shows
+its own coordinate directly on it, permanently ("x = 300") — genuinely
+excellent non-verbal teaching, since the exact number you need is right
+there in the game world, not just in a hint that might have scrolled past.
+The plate had no equivalent: just a bare outline with no indication it
+was even interactive, let alone named, unlike its wall counterpart. Fixed
+with a matching persistent label under the plate — "plate" while empty,
+"held" the moment an echo or the player actually holds it down, so the
+label itself confirms success instead of staying static.
+
+**10. A locked door gave no persistent signal that it was locked.** The
+door dims when shut and glows when open — a good non-verbal cue — but
+nothing distinguished "closed, walk to it" from "closed, and also
+specifically wants a key" until the hint said so, and hints fade from
+memory faster than a room's actual layout does. Fixed with a small key
+icon above the door on any room that requires one, matching its
+locked/unlocked color to the door itself.
+
+**11. The intro's own instructions had a self-contradiction.** The "move"
+row and the "back button" row both used a bare left-arrow glyph — a
+player could easily read the back-button row as "press the ← key" rather
+than "click your browser's actual Back button", especially right below a
+row that uses the identical glyph to mean exactly that. Fixed by giving
+the back-button row its own unambiguous `BACK` keycap, matching the style
+already used for the `URL` row instead of reusing a directional arrow for
+two different things.
+
 ## Every run is a new puzzle
 
 `src/game/procgen.ts` regenerates the three numbered rooms from scratch at
