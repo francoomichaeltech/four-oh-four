@@ -150,6 +150,21 @@ export class Game {
     return this.runRooms[id];
   }
 
+  /** Same effect as pressing "R" on the results screen — exposed so a real
+   *  tappable button works too, not just a keyboard shortcut a phone can't
+   *  press. No-op outside the "found" stage. */
+  public replay(): void {
+    if (this.stage !== "found") return;
+    this.startRun();
+  }
+
+  /** Same effect as pressing "Esc" on the results screen. No-op outside
+   *  the "found" stage. */
+  public backToMenu(): void {
+    if (this.stage !== "found") return;
+    this.goToMenu();
+  }
+
   /**
    * True while a locked room's key hasn't been correctly entered yet.
    *

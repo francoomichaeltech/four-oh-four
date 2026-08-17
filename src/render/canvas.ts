@@ -19,12 +19,20 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     throw new Error("This browser does not support the 2D canvas context.");
   }
 
+  const isTouch = window.matchMedia("(pointer: coarse)").matches;
+  // The touch buttons sit fixed at the bottom of the viewport; without this
+  // the canvas would happily letterbox right underneath them, and room's
+  // door/hint text — which lives in the bottom ~20% of the frame — would
+  // end up hidden behind the controls on shorter phone screens.
+  const TOUCH_CONTROL_RESERVE_PX = 110;
+
   const resize = (): void => {
     const dpr = Math.min(window.devicePixelRatio, 2);
     const margin = 0.92;
+    const availableHeight = window.innerHeight - (isTouch ? TOUCH_CONTROL_RESERVE_PX : 0);
     const scale = Math.min(
       (window.innerWidth * margin) / VIEW_WIDTH,
-      (window.innerHeight * margin) / VIEW_HEIGHT,
+      (availableHeight * margin) / VIEW_HEIGHT,
     );
 
     canvas.width = Math.round(VIEW_WIDTH * scale * dpr);

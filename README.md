@@ -63,6 +63,29 @@ rather than cutting instantly.
 | `R` (on the results screen)| Play again — new key, timer and stats reset       |
 | `Esc` (on the results screen)| Back to the title screen                        |
 
+### On a phone
+
+Every mechanic works on touch, not just desktop with a keyboard:
+
+- **Move** with two on-screen `←`/`→` buttons (`pointer: coarse` only —
+  desktop never sees them). Press-and-hold, same as an arrow key; lifting,
+  sliding off, or an interrupted touch all release cleanly.
+- **Play again / Menu** are real, tappable buttons on the results screen —
+  the `R` / `Esc` keycaps drawn there are for keyboard players; a phone
+  gets its own always-visible buttons doing the exact same thing, not a
+  dead end once you finish a run.
+- **Address bar** editing works exactly like desktop: tap it, type
+  `x=` / `key=` values, confirm. The game deliberately never auto-hides it
+  (`overflow: hidden`, no page scroll to trigger a mobile browser's
+  scroll-away behavior).
+- **Back** is your browser's own back gesture — edge-swipe on iOS Safari,
+  the back button/gesture on Android Chrome. Same `popstate` event as a
+  desktop Back click; no special handling needed, because it was never
+  desktop-specific to begin with.
+- A one-time nudge suggests **landscape** in portrait mode — the game is a
+  fixed 960×540 canvas, and it reads far better sideways on a phone
+  screen. It's a hint, not a lock: portrait still fully works.
+
 ## Running locally
 
 ```bash
@@ -151,6 +174,19 @@ old `key=` can never match again — a room the player had legitimately
 solved would appear solved in the URL but the door would refuse to open.
 Fixed by respawning cleanly in the same room against the fresh layout
 instead of trusting stale URL state.
+
+**7. The game was entirely unplayable on a phone.** An earlier version
+hid the canvas outright on any touch device ("this game needs a
+keyboard") — an instant zero on Fun Factor for anyone judging from a
+phone. Worse, even after that block was lifted, two things would have
+still silently broken: movement has no touch equivalent to arrow keys,
+and the results screen's "R to play again" / "Esc for menu" prompts are
+drawn as canvas pixels, not real buttons — a phone with no keyboard would
+finish one run and be stuck there permanently. Fixed with real on-screen
+touch buttons for movement (`src/core/input.ts` gained
+`pressVirtualLeft/Right`, sharing the exact same held-key set arrow keys
+use) and real tappable "Play again" / "Menu" buttons (`Game.replay()` /
+`Game.backToMenu()`) that work identically on a tap or a mouse click.
 
 ## Every run is a new puzzle
 

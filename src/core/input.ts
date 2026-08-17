@@ -1,8 +1,14 @@
 const LEFT_KEYS = new Set(["ArrowLeft", "KeyA"]);
 const RIGHT_KEYS = new Set(["ArrowRight", "KeyD"]);
 
+/** Virtual codes used by on-screen touch buttons — share the same held-set
+ *  mechanism as real keys, so direction/movement logic never needs to know
+ *  whether a press came from a keyboard or a thumb. */
+const VIRTUAL_LEFT = "VirtualLeft";
+const VIRTUAL_RIGHT = "VirtualRight";
+
 /**
- * Keyboard input.
+ * Keyboard (and touch) input.
  *
  * Browser shortcuts are never swallowed: the browser is part of the game, and
  * a player who cannot reach their own address bar cannot play.
@@ -20,12 +26,12 @@ export class Input {
     window.addEventListener("pointerdown", this.markInteracted);
   }
 
-  /** -1, 0 or 1. Opposing keys cancel, as they should. */
+  /** -1, 0 or 1. Opposing keys (or touch buttons) cancel, as they should. */
   public get direction(): number {
     let axis = 0;
     for (const code of this.held) {
-      if (LEFT_KEYS.has(code)) axis -= 1;
-      if (RIGHT_KEYS.has(code)) axis += 1;
+      if (LEFT_KEYS.has(code) || code === VIRTUAL_LEFT) axis -= 1;
+      if (RIGHT_KEYS.has(code) || code === VIRTUAL_RIGHT) axis += 1;
     }
     return Math.sign(axis);
   }
@@ -46,6 +52,26 @@ export class Input {
     return value;
   }
 
+  /** Starts moving left/right from an on-screen touch button. */
+  public pressVirtualLeft(): void {
+    this.markInteracted();
+    this.held.add(VIRTUAL_LEFT);
+  }
+
+  public pressVirtualRight(): void {
+    this.markInteracted();
+    this.held.add(VIRTUAL_RIGHT);
+  }
+
+  /** Releases a touch button — safe to call even if it was never pressed. */
+  public releaseVirtualLeft(): void {
+    this.held.delete(VIRTUAL_LEFT);
+  }
+
+  public releaseVirtualRight(): void {
+    this.held.delete(VIRTUAL_RIGHT);
+  }
+
   public dispose(): void {
     window.removeEventListener("keydown", this.handleKeyDown);
     window.removeEventListener("keyup", this.handleKeyUp);
@@ -54,7 +80,7 @@ export class Input {
   }
 
   private readonly markInteracted = (): void => {
-    // A click counts as "any key". Without this, a player who arrives by
+    // A click/tap counts as "any key". Without this, a player who arrives by
     // typing the address and pressing Enter is stuck: the keyboard focus is
     // still in the address bar, and the page never sees their keystrokes.
     this.pressedThisFrame = true;

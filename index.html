@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     <meta name="color-scheme" content="dark" />
     <meta
       name="description"
@@ -31,25 +34,105 @@
         display: block;
         touch-action: none;
       }
-      #no-keyboard {
+
+      /*
+       * Touch controls: two large press-and-hold buttons standing in for
+       * the arrow keys. Real keyboards already have that; a phone doesn't.
+       * Hidden on precise-pointer (mouse/trackpad) devices so desktop
+       * players never see clutter they don't need.
+       */
+      #touch-controls {
         display: none;
-        padding: 2rem;
-        max-width: 32rem;
-        text-align: center;
-        color: #ffb703;
-        font: 400 0.95rem/1.9 ui-monospace, "DejaVu Sans Mono", monospace;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 5;
+        justify-content: space-between;
+        padding: 0 1.25rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+        pointer-events: none;
       }
-      /* This game is played by typing into the address bar.
-         Touch devices cannot do that, so we say so honestly. */
+      .touch-btn {
+        pointer-events: auto;
+        width: 4.4rem;
+        height: 4.4rem;
+        border-radius: 999px;
+        border: 1.5px solid #8a6520;
+        background: rgba(255, 183, 3, 0.08);
+        color: #ffb703;
+        font-size: 1.7rem;
+        display: grid;
+        place-items: center;
+        touch-action: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .touch-btn:active {
+        background: rgba(255, 183, 3, 0.24);
+      }
+
+      /* Real, tappable equivalents of the R / Esc keycaps drawn on the
+         results screen — those are canvas pixels, not buttons, and mean
+         nothing to a phone with no keyboard. Shown on every device: a
+         mouse click here is just as valid as pressing R. */
+      #found-controls {
+        display: none;
+        position: fixed;
+        left: 50%;
+        bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px));
+        transform: translateX(-50%);
+        z-index: 6;
+        gap: 0.8rem;
+      }
+      #found-controls.visible {
+        display: flex;
+      }
+      .found-btn {
+        appearance: none;
+        font: 700 12px/1 ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #ffb703;
+        background: rgba(255, 183, 3, 0.06);
+        border: 1.5px solid #ffb703;
+        border-radius: 3px;
+        padding: 0.65rem 1.3rem;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .found-btn:active {
+        background: rgba(255, 183, 3, 0.24);
+      }
+      .found-btn.secondary {
+        color: #8a6520;
+        border-color: #8a6520;
+        background: transparent;
+      }
+
+      /* A gentle nudge, not a blocker: this game is a 960x540 canvas, and
+         portrait phones render it tiny with room to spare below it. */
+      #rotate-hint {
+        display: none;
+        position: fixed;
+        top: env(safe-area-inset-top, 0.75rem);
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 6;
+        color: #8a6520;
+        font: 400 0.72rem/1.4 ui-monospace, "DejaVu Sans Mono", monospace;
+        letter-spacing: 1px;
+        text-align: center;
+        pointer-events: none;
+      }
+
       @media (pointer: coarse) {
-        canvas {
-          display: none;
+        #touch-controls {
+          display: flex;
         }
-        #no-keyboard {
+      }
+      @media (pointer: coarse) and (orientation: portrait) {
+        #rotate-hint {
           display: block;
-        }
-        #intro {
-          display: none;
         }
       }
 
@@ -139,12 +222,17 @@
         <button type="button" class="start-btn">start</button>
       </div>
     </div>
-    <p id="no-keyboard">
-      404<br /><br />
-      this game is played in the address bar.<br />
-      it needs a keyboard.<br /><br />
-      please open it on a desktop browser.
-    </p>
+    <p id="rotate-hint">rotate your phone &mdash; this plays better sideways</p>
+
+    <div id="touch-controls">
+      <button type="button" class="touch-btn" id="touch-left" aria-label="Move left">&larr;</button>
+      <button type="button" class="touch-btn" id="touch-right" aria-label="Move right">&rarr;</button>
+    </div>
+
+    <div id="found-controls">
+      <button type="button" class="found-btn" id="replay-btn">Play again</button>
+      <button type="button" class="found-btn secondary" id="menu-btn">Menu</button>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
