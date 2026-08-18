@@ -143,13 +143,14 @@ export function dots(
   filled: number,
   size = 9,
   gap = 8,
+  color = COLOR_FG,
 ): void {
   for (let i = 0; i < total; i += 1) {
     const dx = x + i * (size + gap);
     if (i < filled) {
-      fillRect(ctx, dx, y, size, size, 0.9);
+      fillRect(ctx, dx, y, size, size, 0.9, color);
     } else {
-      strokeRect(ctx, dx, y, size, size, 0.4, 1.5);
+      strokeRect(ctx, dx, y, size, size, 0.4, 1.5, color);
     }
   }
 }

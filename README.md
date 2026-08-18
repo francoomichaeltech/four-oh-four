@@ -227,6 +227,27 @@ the back-button row its own unambiguous `BACK` keycap, matching the style
 already used for the `URL` row instead of reusing a directional arrow for
 two different things.
 
+**12. Touch controls could false-positive onto a desktop.** `pointer:
+coarse` — the CSS signal used to show on-screen movement buttons — can
+report true on hybrid touchscreen laptops even when a mouse is the
+player's actual, primary input. That would leave phantom buttons
+floating over a desktop game, exactly the kind of thing to embarrass a
+PC-only demo. Fixed by switching to real event detection instead of a
+hardware guess: `src/main.ts` now waits for an actual `touchstart` to
+fire before adding an `is-touch` class anywhere, and `canvas.ts` gained
+`setTouchMode()` so the reserved bottom margin for those buttons only
+ever appears for a player who has genuinely touched the screen — never
+guessed in advance from a media query that can be wrong.
+
+**13. Difficulty had no visible signal at all.** The plate narrowing and
+the seed's reveal window shortening are both real, but both are numbers
+changing quietly in the background — nothing on screen actually told a
+player "this run is harder than the last one." Fixed with a small,
+always-visible `lvl N` readout and colour-coded pips during play (calm
+teal early, amber at the midpoint, red at the difficulty ceiling), plus
+a matching difficulty row in the results-screen stats panel — the exact
+colour progression asked for, not just a number.
+
 ## Every run is a new puzzle
 
 `src/game/procgen.ts` regenerates the three numbered rooms from scratch at

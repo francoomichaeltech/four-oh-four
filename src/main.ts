@@ -56,6 +56,20 @@ function boot(): void {
   bindTouchButton("#touch-left", input.pressVirtualLeft.bind(input), input.releaseVirtualLeft.bind(input));
   bindTouchButton("#touch-right", input.pressVirtualRight.bind(input), input.releaseVirtualRight.bind(input));
 
+  // A real touch is the only trustworthy signal that on-screen movement
+  // buttons are actually needed. `pointer: coarse` alone is not enough —
+  // some hybrid touchscreen laptops report a coarse pointer even while a
+  // mouse is the one actually being used, which would otherwise leave
+  // phantom buttons floating over a desktop player's game.
+  window.addEventListener(
+    "touchstart",
+    () => {
+      document.documentElement.classList.add("is-touch");
+      stage.setTouchMode(true);
+    },
+    { passive: true, once: true },
+  );
+
   const replayBtn = document.querySelector<HTMLButtonElement>("#replay-btn");
   const menuBtn = document.querySelector<HTMLButtonElement>("#menu-btn");
   const foundControls = document.querySelector<HTMLDivElement>("#found-controls");

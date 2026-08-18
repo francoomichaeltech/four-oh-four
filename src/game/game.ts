@@ -9,7 +9,7 @@ import { BOOT_STATE, FOUND_STATE, serializeState } from "../core/state";
 import type { GameState, NavigationEvent, RoomId } from "../core/types";
 import { activeHint, type Hint } from "./hints";
 import { generateRunKey } from "./key";
-import { generateRunRooms } from "./procgen";
+import { generateRunRooms, MAX_DIFFICULTY } from "./procgen";
 import { isDoorOpen, isPlate2Held, isPlateHeld, resolveWalk } from "./rules";
 
 export type Stage = "boot" | "playing" | "ending" | "found";
@@ -31,6 +31,8 @@ export interface RunStats {
   readonly secretRoomVisited: boolean;
   readonly bestTime: number | null;
   readonly isNewBest: boolean;
+  readonly difficulty: number;
+  readonly maxDifficulty: number;
 }
 
 export interface ViewModel {
@@ -96,6 +98,10 @@ export class Game {
   private bestTime: number | null = null;
   private justBeatBest = false;
   private runCount = 0;
+  /** The difficulty level THIS run's rooms were generated at — captured
+   *  separately from runCount, which already advances to the next run's
+   *  value the moment a fresh layout is generated. */
+  private currentDifficulty = 0;
 
   public constructor(
     private readonly router: Router,
@@ -121,6 +127,7 @@ export class Game {
     // mid-room position for a puzzle that is always internally consistent.
     if (this.state.phase === "playing") {
       this.runKey = generateRunKey();
+      this.currentDifficulty = this.runCount;
       const generated = generateRunRooms(Math.floor(Math.random() * 0xffffffff), this.runCount);
       this.runRooms = generated.rooms;
       this.seedVisibleSeconds = generated.seedVisibleSeconds;
@@ -239,6 +246,8 @@ export class Game {
         secretRoomVisited: this.secretRoomVisited,
         bestTime: this.bestTime,
         isNewBest: this.justBeatBest,
+        difficulty: Math.min(this.currentDifficulty, MAX_DIFFICULTY),
+        maxDifficulty: MAX_DIFFICULTY,
       },
     };
   }
@@ -436,6 +445,7 @@ export class Game {
   /** Starts a brand-new run: fresh key, fresh room layout, all stats reset. */
   private startRun(): void {
     const seed = Math.floor(Math.random() * 0xffffffff);
+    this.currentDifficulty = this.runCount;
     const generated = generateRunRooms(seed, this.runCount);
     this.runRooms = generated.rooms;
     this.seedVisibleSeconds = generated.seedVisibleSeconds;

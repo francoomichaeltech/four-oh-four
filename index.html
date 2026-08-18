@@ -38,8 +38,11 @@
       /*
        * Touch controls: two large press-and-hold buttons standing in for
        * the arrow keys. Real keyboards already have that; a phone doesn't.
-       * Hidden on precise-pointer (mouse/trackpad) devices so desktop
-       * players never see clutter they don't need.
+       * Gated on html.is-touch (set in main.ts only after a REAL touch
+       * event fires) rather than a `pointer: coarse` media query — some
+       * hybrid touchscreen laptops report coarse pointers even when a
+       * mouse is the actual primary input, which would otherwise leave
+       * phantom movement buttons floating over a desktop's game.
        */
       #touch-controls {
         display: none;
@@ -125,10 +128,8 @@
         pointer-events: none;
       }
 
-      @media (pointer: coarse) {
-        #touch-controls.active {
-          display: flex;
-        }
+      html.is-touch #touch-controls.active {
+        display: flex;
       }
       @media (pointer: coarse) and (orientation: portrait) {
         #rotate-hint {

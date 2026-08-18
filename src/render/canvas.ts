@@ -4,6 +4,11 @@ export interface Stage {
   readonly ctx: CanvasRenderingContext2D;
   /** Call once per frame before drawing. Clears to the background colour. */
   begin(): void;
+  /** Call once, the first time a real touch event is observed — reserves
+   *  room for the on-screen movement buttons and re-measures immediately.
+   *  Never called at all on a mouse/trackpad-only device, so the canvas
+   *  only ever shrinks for a touch player who actually needs the space. */
+  setTouchMode(isTouch: boolean): void;
 }
 
 /**
@@ -19,7 +24,13 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     throw new Error("This browser does not support the 2D canvas context.");
   }
 
-  const isTouch = window.matchMedia("(pointer: coarse)").matches;
+  // Starts false (mouse/desktop assumed) rather than guessed from
+  // `pointer: coarse` — that media query can false-positive on hybrid
+  // touchscreen laptops where a mouse is the actual primary input, which
+  // would otherwise shrink the canvas to reserve space for buttons that
+  // will never appear. setTouchMode() is the only way this flips, and it's
+  // only ever called after a genuine touchstart (see main.ts).
+  let isTouch = false;
   // The touch buttons sit fixed at the bottom of the viewport; without this
   // the canvas would happily letterbox right underneath them, and room's
   // door/hint text — which lives in the bottom ~20% of the frame — would
@@ -51,6 +62,11 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     begin(): void {
       ctx.fillStyle = COLOR_BG;
       ctx.fillRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+    },
+    setTouchMode(next: boolean): void {
+      if (next === isTouch) return;
+      isTouch = next;
+      resize();
     },
   };
 }
