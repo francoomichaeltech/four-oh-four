@@ -188,21 +188,6 @@ function renderRoom(ctx: CanvasRenderingContext2D, view: ViewModel): void {
     text(ctx, room.title, 40, 108, 13, { color: COLOR_DIM, letterSpacing: "2px" });
   }
 
-  // A small, always-visible difficulty readout — not just a number that
-  // quietly shrinks a plate, but a colour a player actually notices
-  // creeping from calm to urgent across replays.
-  const diff = view.stats.difficulty;
-  const maxDiff = view.stats.maxDifficulty;
-  const diffColor = diff >= maxDiff - 1 ? COLOR_DANGER : diff >= Math.ceil(maxDiff / 2) ? COLOR_FG : COLOR_ECHO;
-  const diffPipsWidth = maxDiff * 10;
-  const diffX = VIEW_WIDTH / 2 - diffPipsWidth / 2;
-  text(ctx, `lvl ${String(diff + 1)}`, VIEW_WIDTH / 2, 96, 10, {
-    align: "center",
-    color: diffColor,
-    letterSpacing: "1px",
-  });
-  dots(ctx, diffX, 102, maxDiff, diff + 1, 6, 4, diffColor);
-
   iconClock(ctx, VIEW_WIDTH - 96, 102, 13, { color: COLOR_DIM });
   text(ctx, formatTime(view.stats.elapsed), VIEW_WIDTH - 40, 108, 13, {
     align: "right",
@@ -304,14 +289,6 @@ function renderFound(ctx: CanvasRenderingContext2D, view: ViewModel): void {
 
   if (t < 0.5) return;
 
-  const difficultyColor =
-    stats.difficulty >= stats.maxDifficulty - 1
-      ? COLOR_DANGER
-      : stats.difficulty >= Math.ceil(stats.maxDifficulty / 2)
-        ? COLOR_FG
-        : COLOR_ECHO;
-  const difficultyLabel = `${String(Math.min(stats.difficulty, stats.maxDifficulty))} / ${String(stats.maxDifficulty)}`;
-
   const statFade = Math.min((t - 0.5) / 0.6, 1);
   const rows: readonly [(cx: number, cy: number, alpha: number) => void, string, string, string?][] = [
     [
@@ -338,15 +315,6 @@ function renderFound(ctx: CanvasRenderingContext2D, view: ViewModel): void {
       (cx, cy, a): void => { iconClock(ctx, cx, cy, 15, { color: COLOR_DIM, alpha: a }); },
       "best",
       stats.bestTime !== null ? formatTime(stats.bestTime) : "\u2014",
-    ],
-    [
-      (cx, cy, a): void => {
-        dots(ctx, cx - 7, cy - 4, stats.maxDifficulty, stats.difficulty + 1, 4, 3, difficultyColor);
-        void a;
-      },
-      "difficulty",
-      difficultyLabel,
-      difficultyColor,
     ],
   ];
 
