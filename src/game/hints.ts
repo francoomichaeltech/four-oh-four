@@ -104,7 +104,7 @@ const HINT_TEMPLATES: Readonly<Record<RoomId, readonly HintTemplate[]>> = {
     // Not part of the escalation above — a slow, purely time-based nudge
     // toward the secret room, unrelated to whether this room's own lock
     // has been solved yet. Late and easy to miss on purpose.
-    { icon: null, text: () => "the address bar counts higher than 3, too", ready: afterSeconds(90) },
+    { icon: "edit", text: () => "psst \u2014 try typing #/room/4 up there", ready: afterSeconds(90) },
   ],
   4: [{ icon: null, text: () => "there is nothing here", ready: afterSeconds(2) }],
 };

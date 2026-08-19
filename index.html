@@ -76,8 +76,9 @@
 
       /* Real, tappable equivalents of the R / Esc keycaps drawn on the
          results screen — those are canvas pixels, not buttons, and mean
-         nothing to a phone with no keyboard. Shown on every device: a
-         mouse click here is just as valid as pressing R. */
+         nothing to a phone with no keyboard. Desktop already has R / Esc;
+         these only appear for a genuinely touch-detected player (see
+         html.is-touch in main.ts), not just anyone with a mouse. */
       #found-controls {
         display: none;
         position: fixed;
@@ -87,7 +88,7 @@
         z-index: 6;
         gap: 0.8rem;
       }
-      #found-controls.visible {
+      html.is-touch #found-controls.visible {
         display: flex;
       }
       .found-btn {

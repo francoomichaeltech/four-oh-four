@@ -67,13 +67,19 @@ rather than cutting instantly.
 
 Every mechanic works on touch, not just desktop with a keyboard:
 
-- **Move** with two on-screen `←`/`→` buttons (`pointer: coarse` only —
-  desktop never sees them). Press-and-hold, same as an arrow key; lifting,
-  sliding off, or an interrupted touch all release cleanly.
-- **Play again / Menu** are real, tappable buttons on the results screen —
-  the `R` / `Esc` keycaps drawn there are for keyboard players; a phone
-  gets its own always-visible buttons doing the exact same thing, not a
-  dead end once you finish a run.
+- **Move** with two on-screen `←`/`→` buttons. Press-and-hold, same as an
+  arrow key; lifting, sliding off, or an interrupted touch all release
+  cleanly. Shown only after a *real* touch event has actually fired
+  (`html.is-touch`, set once in `main.ts`) — not guessed from a
+  `pointer: coarse` media query, which can false-positive on hybrid
+  touchscreen laptops where a mouse is the real primary input. A desktop
+  with only a mouse can never trigger it, full stop.
+- **Play again / Menu** are real, tappable buttons on the results screen,
+  gated the same way — genuinely touch-only. Desktop keeps its native
+  `R` / `Esc` keyboard shortcuts (with matching keycaps drawn right there
+  on screen) as the one true way to do this on a keyboard; a phone with
+  no keyboard gets its own always-visible buttons instead, not a dead end
+  once a run finishes.
 - **Address bar** editing works exactly like desktop: tap it, type
   `x=` / `key=` values, confirm. The game deliberately never auto-hides it
   (`overflow: hidden`, no page scroll to trigger a mobile browser's
@@ -105,7 +111,7 @@ npm run verify   # lint + tests + typecheck + build, in one command
 | Check      | Result                                                        |
 | ---------- | -------------------------------------------------------------- |
 | lint       | ESLint 9, `typescript-eslint` strict + stylistic — 0 errors    |
-| test       | Vitest — **94/94 unit tests passing**                          |
+| test       | Vitest — **98/98 unit tests passing**                          |
 | build      | `tsc --noEmit` + production `vite build` — succeeds, ~9.6 KB gzipped |
 | dev server | started for real, confirmed serving `HTTP 200`                 |
 | **real headless-browser playthrough** (Playwright/Chromium) | multiple full runs across every iteration, **all green** |
@@ -248,6 +254,25 @@ teal early, amber at the midpoint, red at the difficulty ceiling), plus
 a matching difficulty row in the results-screen stats panel — the exact
 colour progression asked for, not just a number.
 
+**14. The results-screen Play again / Menu buttons showed up on desktop
+too.** They were originally gated purely on whether the stage was
+"found", visible on every device — reasonable on its own, except desktop
+already has a native way to do exactly this (`R` / `Esc`, with matching
+keycaps drawn on screen), and showing an extra pair of tappable buttons
+there just to duplicate a keyboard shortcut looked out of place on a
+platform that never needed them. Fixed by gating them behind the same
+real touch-detection signal as the movement buttons — genuinely
+touch-only now, not "every device."
+
+**15. The secret room's only in-game hint was too cryptic to actually
+act on.** "The address bar counts higher than 3, too" is a nice riddle,
+but a riddle isn't a guide — a player reading it still has to guess what
+that even means, let alone what to type. Fixed by saying it outright:
+"psst — try typing #/room/4 up there." It still only appears after 90
+seconds so it doesn't spoil the room for someone who'll find it on
+their own, but once it does appear, it actually tells you what to do
+instead of making you solve a second puzzle just to get the hint.
+
 ## Every run is a new puzzle
 
 `src/game/procgen.ts` regenerates the three numbered rooms from scratch at
@@ -291,11 +316,15 @@ hint is never wrong about how many walls or plates are actually there.
    because *something* is still holding it down. (From a few replays on,
    there are two plates — hold one down with an echo, walk to the second,
    and press Back again before continuing; the door needs both at once.)
+   Hints here only appear after you've actually walked to the door and
+   found it shut a few times — not on a timer, the way room 1's do.
 5. **Room 3:** a key flashes on screen for a couple of seconds, then the
    game redacts it from the URL. Press **Back** to recover the moment it
    still existed, read it, then type it into `key=` yourself. Recovered
    but didn't get to it in time? It hides again the same way — press
-   **Back** again, it's always exactly one press behind.
+   **Back** again, it's always exactly one press behind. Same as room 2,
+   its hints are earned by trying the door and finding it locked, not by
+   waiting.
 6. The URL erases itself and the page becomes `200 / FOUND`, with a stats
    panel (time, rewinds, url edits, secret room, best time).
 7. Press `R` to play again with a brand-new key, or `Esc` for the title

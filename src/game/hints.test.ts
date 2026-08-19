@@ -133,11 +133,11 @@ describe("activeHint — rooms after the first (earned by struggling, not time)"
     expect(activeHint(room, 0, 3)?.text).toBe("press back, read it, then type key=");
   });
 
-  it("mentions the secret room late, purely on a timer, without spoiling it early", () => {
+  it("mentions the secret room late but explicitly, telling the player exactly what to type", () => {
     const room = makeRoom({ id: 3, requiresKey: true });
     expect(activeHint(room, 32, 0)).toBeNull();
     expect(activeHint(room, 89, 3)?.text).not.toMatch(/room/);
-    expect(activeHint(room, 90, 3)?.text).toBe("the address bar counts higher than 3, too");
+    expect(activeHint(room, 90, 3)?.text).toBe("psst \u2014 try typing #/room/4 up there");
   });
 
   it("room 4's lone hint stays time-based — nothing to fail there", () => {
