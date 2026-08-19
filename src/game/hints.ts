@@ -6,15 +6,17 @@ import type { RoomId } from "../core/types";
 export type HintIcon = "edit" | "back" | "key" | null;
 
 export interface Hint {
-  readonly at: number;
   readonly text: string;
   readonly icon: HintIcon;
 }
 
 interface HintTemplate {
-  readonly at: number;
   readonly icon: HintIcon;
   readonly text: (room: RoomDef) => string;
+  /** Whether this tier has been earned yet, given how long the player has
+   *  been in the room and how many times they've reached the door only to
+   *  find it still shut. */
+  readonly ready: (elapsed: number, struggles: number) => boolean;
 }
 
 function walls(room: RoomDef): readonly Span[] {
@@ -37,13 +39,28 @@ function pastAllWalls(room: RoomDef): string {
   return String(Math.ceil(clearFace / 10) * 10);
 }
 
+/** Room 1 is the tutorial: hints arrive on a fast timer so the core trick
+ *  — the URL is editable, edit it — is taught quickly and reliably. */
+function afterSeconds(seconds: number): HintTemplate["ready"] {
+  return (elapsed): boolean => elapsed >= seconds;
+}
+
 /**
- * Escalating nudges, short enough to read in one glance. The first one
- * appears almost immediately — a silent room for 14 seconds is exactly
- * where a new player stalls out, wondering what's even expected of them.
- * A judge who is stuck for two minutes closes the tab, so the last hint in
- * every room is close to an outright answer, on purpose — brevity does not
- * mean vague.
+ * Every room after the first expects the trick to already be understood,
+ * so a hint has to be *earned* by actually trying the door and finding it
+ * shut — not just handed over because a timer ran out. `minStruggles` is
+ * the real trigger; `timeFallback` is only a safety net for a player who
+ * hasn't found the door at all yet, so nobody is left with literally zero
+ * guidance forever.
+ */
+function afterStruggles(minStruggles: number, timeFallback: number): HintTemplate["ready"] {
+  return (elapsed, struggles): boolean => struggles >= minStruggles || elapsed >= timeFallback;
+}
+
+/**
+ * Escalating nudges, short enough to read in one glance. A judge who is
+ * stuck for two minutes closes the tab, so the last hint in every room is
+ * close to an outright answer, on purpose — brevity does not mean vague.
  *
  * Every room is procedurally generated (see game/procgen.ts), so a hint can
  * never hardcode a coordinate — it has to read the room's actual rolled
@@ -52,42 +69,51 @@ function pastAllWalls(room: RoomDef): string {
  */
 const HINT_TEMPLATES: Readonly<Record<RoomId, readonly HintTemplate[]>> = {
   1: [
-    { at: 2, icon: null, text: (room) => `wall at x = ${wallPositions(room)}` },
-    { at: 16, icon: "edit", text: () => "check the address bar" },
-    { at: 32, icon: "edit", text: (room) => `edit it \u2014 try x = ${pastAllWalls(room)}` },
+    {
+      icon: null,
+      text: (room) => `wall at x = ${wallPositions(room)}`,
+      ready: afterSeconds(2),
+    },
+    { icon: "edit", text: () => "check the address bar", ready: afterSeconds(16) },
+    {
+      icon: "edit",
+      text: (room) => `edit it \u2014 try x = ${pastAllWalls(room)}`,
+      ready: afterSeconds(32),
+    },
   ],
   2: [
     {
-      at: 2,
       icon: null,
-      text: (room) => (room.plate2 !== null ? "plates need weight" : "plate needs weight"),
+      text: (room) => (room.plate2 !== null ? "the plates need weight" : "the plate needs weight"),
+      ready: afterStruggles(1, 45),
     },
-    { at: 16, icon: "back", text: () => "back button = time travel" },
+    { icon: "back", text: () => "the back button is a time machine", ready: afterStruggles(2, 70) },
     {
-      at: 32,
       icon: "back",
       text: (room) =>
         room.plate2 !== null
-          ? "hold one, walk to the other, press back on each"
-          : "stand, walk away, press back",
+          ? "hold one plate, walk to the other, press back on each"
+          : "stand on it, walk away, then press back",
+      ready: afterStruggles(3, 100),
     },
   ],
   3: [
-    { at: 2, icon: "key", text: () => "door wants a key" },
-    { at: 16, icon: "key", text: () => "redacted \u2014 history remembers" },
-    { at: 32, icon: "back", text: () => "back, read it, type key=" },
-    // Late and easy to miss on purpose — a small nudge for anyone still
-    // exploring rather than rushing to finish, not a spoiler up front.
-    { at: 70, icon: null, text: () => "the address bar counts past 3, too" },
+    { icon: "key", text: () => "the door needs a key", ready: afterStruggles(1, 45) },
+    { icon: "key", text: () => "it was redacted \u2014 history still remembers it", ready: afterStruggles(2, 70) },
+    { icon: "back", text: () => "press back, read it, then type key=", ready: afterStruggles(3, 100) },
+    // Not part of the escalation above — a slow, purely time-based nudge
+    // toward the secret room, unrelated to whether this room's own lock
+    // has been solved yet. Late and easy to miss on purpose.
+    { icon: null, text: () => "the address bar counts higher than 3, too", ready: afterSeconds(90) },
   ],
-  4: [{ at: 2, icon: null, text: () => "there is nothing here" }],
+  4: [{ icon: null, text: () => "there is nothing here", ready: afterSeconds(2) }],
 };
 
-export function activeHint(room: RoomDef, elapsed: number): Hint | null {
+export function activeHint(room: RoomDef, elapsed: number, struggles: number): Hint | null {
   let current: HintTemplate | null = null;
   for (const template of HINT_TEMPLATES[room.id]) {
-    if (elapsed >= template.at) current = template;
+    if (template.ready(elapsed, struggles)) current = template;
   }
   if (current === null) return null;
-  return { at: current.at, icon: current.icon, text: current.text(room) };
+  return { icon: current.icon, text: current.text(room) };
 }

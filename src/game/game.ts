@@ -73,6 +73,13 @@ export class Game {
   private stage: Stage;
   private state: GameState;
   private roomTime = 0;
+  /** How many times the player has reached this room's door while it was
+   *  still closed — a natural, room-agnostic "tried and failed" signal.
+   *  Rooms after the first use this instead of a timer to decide when a
+   *  hint has actually been earned: room 1 teaches the core trick fast,
+   *  everything after expects the player to attempt it first. */
+  private struggleCount = 0;
+  private wasStuckAtDoor = false;
   private stageTime = 0;
   private stepTimer = 0;
   private wasMoving = false;
@@ -231,7 +238,7 @@ export class Game {
       doorOpen: isDoorOpen(this.state, room, expectedKey),
       plateHeld: isPlateHeld(this.state, room),
       plate2Held: isPlate2Held(this.state, room),
-      hint: this.stage === "playing" ? activeHint(room, this.roomTime) : null,
+      hint: this.stage === "playing" ? activeHint(room, this.roomTime, this.struggleCount) : null,
       flash: this.flash,
       shake: this.shake,
       squash: this.squash,
@@ -332,7 +339,13 @@ export class Game {
 
     this.updateSeed(dt);
 
-    if (isDoorOpen(this.state, room, expectedKey) && this.state.x >= room.doorX) {
+    const doorOpenNow = isDoorOpen(this.state, room, expectedKey);
+    const atDoor = this.state.x >= room.doorX;
+    const stuckNow = atDoor && !doorOpenNow;
+    if (stuckNow && !this.wasStuckAtDoor) this.struggleCount += 1;
+    this.wasStuckAtDoor = stuckNow;
+
+    if (doorOpenNow && atDoor) {
       this.advance();
     }
   }
@@ -401,6 +414,8 @@ export class Game {
     this.stageTime = 0;
     this.roomTime = 0;
     this.wasMoving = false;
+    this.struggleCount = 0;
+    this.wasStuckAtDoor = false;
     this.transitionAlpha = 1;
 
     this.audio.play("reveal");
@@ -542,6 +557,8 @@ export class Game {
       this.roomTime = 0;
       this.stageTime = 0;
       this.seedTimer = 0;
+      this.struggleCount = 0;
+      this.wasStuckAtDoor = false;
       if (changedRoom) this.transitionAlpha = 1;
     }
 
