@@ -2,7 +2,7 @@
 
 A minimalist puzzle-platformer played inside your browser's **address bar** and **Back button**.
 
-**Live Demo:** https://four-oh-four-three.vercel.app/
+**Live Demo:** https://four-oh-four-beta.vercel.app/
 
 ## Overview
 
